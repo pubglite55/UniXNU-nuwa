@@ -60,7 +60,9 @@ jobs:
       - name: Build 4K kernel
         env:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
-        run: bash scripts/build-xnu-4k-baseline.sh
+        # -x so a bare set -e / set -u trip is visible in the log instead of a
+        # silent exit 1.
+        run: bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tail -400
 
       - name: Collect
         if: always()
