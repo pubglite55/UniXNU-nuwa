@@ -57,6 +57,20 @@ jobs:
           sudo xcode-select -s "$XC"
           xcodebuild -version
 
+      # The baseline script asserts the namespaced libcorecrypto archive exists
+      # (test -f, so a miss is a silent set -e exit). It is produced here from the
+      # pinned source in feeds.toml rather than by the script itself.
+      - name: Stage corecrypto provider
+        run: |
+          mkdir -p refer
+          if [ ! -d refer/corecrypto-2023/.git ]; then
+            git clone https://github.com/ONLYA/corecrypto-2023.git refer/corecrypto-2023
+          fi
+          git -C refer/corecrypto-2023 checkout -q 11fba65b12d8830630e248dfa8344caf8b065f26
+          python3 scripts/build-corecrypto-14.py
+          python3 scripts/build-corecrypto-14.py --namespace
+          ls -l build/corecrypto-2023/
+
       - name: Build 4K kernel
         env:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
