@@ -773,7 +773,14 @@ from pathlib import Path
 import sys
 directory = Path('build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837')
 stamp = directory / '.native-aes-link-input'
-identity = '|'.join(mode + ':' + (hashlib.sha256(Path(archive).read_bytes()).hexdigest() if mode == '1' else 'disabled')
+def fingerprint(mode, archive):
+    # A missing archive means this pass runs before the builders (see
+    # XNU_ALLOW_MISSING_ARCHIVES); treat it as disabled instead of crashing.
+    path = Path(archive)
+    if mode != '1' or not path.is_file():
+        return 'disabled'
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+identity = '|'.join(mode + ':' + fingerprint(mode, archive)
                     for mode, archive in zip(sys.argv[1::2], sys.argv[2::2]))
 if not stamp.exists() or stamp.read_text() != identity:
     # Make does not track selection of an older alternative external archive.
