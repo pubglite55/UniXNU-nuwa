@@ -151,6 +151,21 @@ fi
 if [ ! -f "$KERNEL_SDKROOT/usr/local/lib/kernel/libfirehose_kernel.a" ]; then
   bash scripts/build-firehose.sh
 fi
+
+# The corecrypto provider includes xnu's own kernel headers (kern/clock.h,
+# kern/assert.h), so it can only be compiled after installhdrs has populated
+# KERNEL_SDKROOT. build-xnu-4k-baseline.sh then asserts the namespaced archive
+# with a bare test -f, which fails silently, so build it here.
+if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ]; then
+  if [ ! -f build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a ]; then
+    if [ ! -d refer/corecrypto-2023/.git ]; then
+      git clone https://github.com/ONLYA/corecrypto-2023.git refer/corecrypto-2023
+    fi
+    git -C refer/corecrypto-2023 checkout -q 11fba65b12d8830630e248dfa8344caf8b065f26
+    KERNEL_SDKROOT="$KERNEL_SDKROOT" python3 scripts/build-corecrypto-14.py
+    KERNEL_SDKROOT="$KERNEL_SDKROOT" python3 scripts/build-corecrypto-14.py --namespace
+  fi
+fi
 # The baseline builds the kernel; `all` also checks the Apple kext export ABI.
 EXTRA_MAKE_ARGS=()
 ARM_DT_PLATFORM=${XNU_ARM_DT_PLATFORM:-0}
