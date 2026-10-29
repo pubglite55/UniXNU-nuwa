@@ -174,6 +174,18 @@ fi
 if [ ! -f "$KERNEL_SDKROOT/usr/local/lib/kernel/libfirehose_kernel.a" ]; then
   bash scripts/build-firehose.sh
 fi
+
+# xnu resolves <os/...> through EXPORT_HDRS/libkern, which installhdrs filled
+# before firehose ran. Publish the private header there too, or bsd/kern/subr_log.c
+# cannot include it.
+for _fh in "$KERNEL_SDKROOT/usr/local/include/kernel/os/firehose_buffer_private.h" \
+           "$KERNEL_SDKROOT/usr/local/include/os/firehose_buffer_private.h"; do
+  if [ -f "$_fh" ]; then
+    mkdir -p "$ROOT/build/xnu/ios-obj/EXPORT_HDRS/libkern/os"
+    cp "$_fh" "$ROOT/build/xnu/ios-obj/EXPORT_HDRS/libkern/os/firehose_buffer_private.h"
+    break
+  fi
+done
 if [ "$(uname -s)" = Linux ]; then
   python3 scripts/linux/prepare-xnu.py libs
 fi
