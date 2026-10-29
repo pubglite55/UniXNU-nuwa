@@ -42,7 +42,7 @@ env:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-26
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
           echo '=== available Xcode ==='
           ls -d /Applications/Xcode_*.app
           # xnu-10063 needs a clang that accepts -mach_msg2 (Xcode 16+).
-          XC=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)
+          XC=$(ls -d /Applications/Xcode_2[6-9]*.app /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)
           if [ -z "$XC" ]; then
             XC=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
             echo "::warning::no Xcode 16+; falling back to $XC (-mach_msg2 may be unsupported)"
@@ -97,7 +97,7 @@ jobs:
       - name: Assemble the build tree
         run: |
           set -o pipefail
-          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)/Contents/Developer
+          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_2[6-9]*.app /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)/Contents/Developer
           export PATH="$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/bin:$PATH"
           chmod +x unixnu scripts/build-xnu-4k-baseline.sh scripts/linux/* 2>/dev/null || true
           # This checkout is both the driver tree and the device repository
@@ -115,7 +115,7 @@ jobs:
           # matter what xcode-select says; its mig then passes -mach_msg2 to a
           # clang that does not know the flag. Put the selected Xcode's
           # toolchain in front instead.
-          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)/Contents/Developer
+          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_2[6-9]*.app /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)/Contents/Developer
           export PATH="$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/bin:$PATH"
           echo "DEVELOPER_DIR=$DEVELOPER_DIR"
           which -a clang | head -4
