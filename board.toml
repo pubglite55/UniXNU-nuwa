@@ -65,7 +65,8 @@ archives = [
   # CONFIG_XNU_NATIVE_UFS=n in the defconfig; the storage port is the next step.
   # "build-arm-driver.py NativeUfs --unverified",
   # "build-ufs-original-bindings.py",
-  "build-sheng-platform-power.py",
+  # Needs a prelink candidate that only exists after this kernel is built.
+  # "build-sheng-platform-power.py",
   "build-libpthread-kernel.py",
   # 4K chain: the stub supplies the legacy display hooks so the kernel links
   # before the prelink candidate exists (same role as fuxi_defconfig).

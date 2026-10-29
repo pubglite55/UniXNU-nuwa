@@ -30,7 +30,12 @@ CONFIG_XNU_NATIVE_AES=y
 CONFIG_XNU_DT_PANIC_REGION=y
 CONFIG_XNU_NATIVE_ARCH_TIMER=y
 CONFIG_XNU_NATIVE_PAN=y
-CONFIG_XNU_SHENG_PMGR=y
+# build-sheng-platform-power.py audits AppleMobileFileIntegrity/ApplePMGR
+# instructions against a prelink candidate (build/xnu-prelink/*-candidate.macho),
+# which cannot exist before the kernel is built:
+#   No reference candidate available
+# Leave the sheng PMGR kit out until the prelink stage produces a candidate.
+CONFIG_XNU_SHENG_PMGR=n
 
 # Hardware verification gates, all off for the first round.
 #   TRUST_CACHE_RUNTIME / VERIFIED_ROOT_PROBE   need a policy bundle from a real DMG
