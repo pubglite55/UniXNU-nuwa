@@ -45,14 +45,16 @@ for LATE_PATCH in "$ROOT/patches/xnu/zzz-boot-progress.patch" "$ROOT/patches/xnu
   fi
 done
 for PATCH in "$ROOT"/patches/xnu/*.patch "$ROOT"/kits/XnuPrelink/patches/*.patch; do
+  # An unmatched glob stays literal; skip paths that are not files.
+  [ -f "$PATCH" ] || continue
   if ! git -C .cache/xnu-work apply --reverse --check "$PATCH" >/dev/null 2>&1; then
     git -C .cache/xnu-work apply --check "$PATCH"
     git -C .cache/xnu-work apply "$PATCH"
   fi
 done
 fi
-ols
-# are defined by patches/xnu/offline-component-load-probes.patch; this one is
+# nuwa: the base patches reference native_legacy_display_probe() from
+# bsd/kern/bsd_init.c even when NATIVE_LEGACY_DISPLAY is off. The other probe symbols
 # supplied here because the legacy display provider is not built during the
 # bootstrap pass. Remove once the sheng display archive is built in CI
 # (nuwa_defconfig enables it).
