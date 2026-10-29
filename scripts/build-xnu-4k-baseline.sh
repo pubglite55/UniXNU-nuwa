@@ -70,6 +70,20 @@ __attribute__((weak)) void native_legacy_display_probe(void)
 NUWA_DISPLAY_STUB
 fi
 export XNU_AVAILABILITY_PL=$ROOT/.cache/fakeroot/usr/local/libexec/availability.pl
+# The XNU rules resolve availability.pl through the active SDK root, not through
+# this variable. installhdrs runs with SDKROOT=macosx and the kernel build with
+# iphoneos, so stage the tool into both SDKs.
+if [ -f "$XNU_AVAILABILITY_PL" ]; then
+  for _sdkname in macosx iphoneos; do
+    _SDK=$(xcrun --sdk "$_sdkname" --show-sdk-path 2>/dev/null || true)
+    [ -n "$_SDK" ] || continue
+    if [ ! -x "$_SDK/usr/local/libexec/availability.pl" ]; then
+      sudo mkdir -p "$_SDK/usr/local/libexec"
+      sudo cp "$XNU_AVAILABILITY_PL" "$_SDK/usr/local/libexec/availability.pl" 2>/dev/null || true
+      sudo chmod 755 "$_SDK/usr/local/libexec/availability.pl" 2>/dev/null || true
+    fi
+  done
+fi
 python3 scripts/prepare-xnu-source.py
 # A Linux host builds with upstream clang and GNU tools (scripts/linux): rewrite the few sources that assume
 # Apple's, and pass xnu's make what a Mac provides itself (host compiler, mig, memory and CPU counts).
