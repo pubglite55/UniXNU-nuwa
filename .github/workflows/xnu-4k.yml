@@ -63,17 +63,27 @@ jobs:
       # exists after a kernel link pass, and the link needs the corecrypto
       # archive. Break the cycle the way upstream does: link once without
       # corecrypto, build the provider, then link for real (incremental).
-      # board.toml lists the archive builders; the unixnu driver normally runs
-      # them before the kernel step, but this workflow calls the kernel script
-      # directly, so run the same list here. Order matters (corecrypto namespace
-      # is deferred to its own step later).
+      # The kernel build and the component archives depend on each other:
+      # build-arm-driver.py reads the kernel's per-object .cpo.json (compile
+      # flags), while the kernel link wants the archives. Upstream resolves it
+      # by compiling the kernel first (which writes .cpo.json and
+      # link.filelist), then building the archives, then linking again.
+      # XNU_ALLOW_MISSING_ARCHIVES skips every test -f assertion so pass 0 can
+      # reach the compile stage with nothing built yet.
+      - name: Pass 0 - compile kernel to emit .cpo.json and link.filelist
+        env:
+          XNU_ALLOW_MISSING_ARCHIVES: "1"
+        run: |
+          set -o pipefail
+          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/pass0.log | tail -80 || true
+          echo '--- artefacts pass 0 must produce ---'
+          ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || echo 'link.filelist MISSING'
+          ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json 2>/dev/null || echo 'cpo.json MISSING'
+
       - name: Build component archives
         run: |
           set -euo pipefail
-          run_archive() {
-            echo "=== $* ==="
-            python3 "scripts/$1" ${@:2}
-          }
+          run_archive() { echo "=== $* ==="; python3 "scripts/$1" ${@:2}; }
           run_archive build-arm-driver.py ArmDTPlatform
           run_archive build-arm-driver.py ArmCpu
           run_archive build-arm-driver.py NativeAES
@@ -83,28 +93,11 @@ jobs:
           run_archive build-sheng-platform-power.py
           run_archive build-libpthread-kernel.py
           run_archive build-legacy-stub.py
-          echo '=== archives produced ==='
           ls -l build/armdt-platform/*.a build/legacy-stub/*.a 2>/dev/null || true
 
-      - name: Pass 1 - compile and link once to produce link.filelist
-        # Full personality, but the corecrypto archive assertion is skipped and
-        # a failed link is tolerated: link.filelist is written before the link,
-        # and it is the only artefact this pass needs.
-        env:
-          MAKEFLAGS: ""
-          XNU_ALLOW_MISSING_CRYPTO_ARCHIVE: "1"
-        run: |
-          set -o pipefail
-          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/pass1.log | tail -120 || true
-          echo '--- link.filelist ---'
-          ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || echo 'MISSING'
-          grep -c . build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || true
-
-      # The namespaced provider is what the baseline asserts with a bare
-      # test -f. Build it now that link.filelist exists.
       - name: Build corecrypto provider
         run: |
-          set -o pipefail
+          set -euo pipefail
           if [ ! -d refer/corecrypto-2023/.git ]; then
             git clone https://github.com/ONLYA/corecrypto-2023.git refer/corecrypto-2023
           fi
@@ -113,12 +106,12 @@ jobs:
           python3 scripts/build-corecrypto-14.py --namespace
           ls -l build/corecrypto-2023/*.a
 
-      - name: Pass 2 - build the kernel with corecrypto
+      - name: Pass 1 - build the kernel for real
         env:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
         run: |
           set -o pipefail
-          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/xnu-4k.log | tail -400
+          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/xnu-4k.log | tail -300
 
       - name: Collect
         if: always()
