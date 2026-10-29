@@ -60,7 +60,15 @@ jobs:
           printf '#!/bin/sh\nexit 0\n' | sudo tee /usr/local/bin/xcodes >/dev/null
           sudo chmod +x /usr/local/bin/xcodes
           sw_vers
-          XC=$(ls -d /Applications/Xcode_*.app | sort -V | head -1)
+          echo '=== available Xcode ==='
+          ls -d /Applications/Xcode_*.app
+          # xnu-10063 needs a clang that accepts -mach_msg2 (Xcode 16+).
+          XC=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XC" ]; then
+            XC=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+            echo "::warning::no Xcode 16+; falling back to $XC (-mach_msg2 may be unsupported)"
+          fi
+          echo "chosen: $XC"
           echo "DEVELOPER_DIR=$XC/Contents/Developer" >> "$GITHUB_ENV"
           sudo xcode-select -s "$XC"
           xcodebuild -version
@@ -77,7 +85,7 @@ jobs:
       # the archive builders only.
       - name: Pin the Xcode toolchain on PATH
         run: |
-          XC=$(ls -d /Applications/Xcode_*.app | sort -V | head -1)
+          XC=${DEVELOPER_DIR%/Contents/Developer}
           TOOL="$XC/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin"
           echo "$TOOL" >> "$GITHUB_PATH"
           echo '=== clang resolution ==='
