@@ -76,7 +76,7 @@ jobs:
           # This checkout is both the driver tree and the device repository
           # (board.toml lives at the root), so point -D at it.
           export UNIXNU_DEVICE="$PWD"
-          ./unixnu defconfig -D "$PWD" nuwa4k
+          ./unixnu defconfig -D "$PWD" nuwa4k_defconfig
           ./unixnu tree -D "$PWD" 2>&1 | tail -40
 
       - name: Build kernel
