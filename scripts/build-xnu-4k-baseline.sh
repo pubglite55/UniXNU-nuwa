@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Many checks are bare `test -f`; name the one that stops the build.
+trap 'echo "build-xnu-4k-baseline.sh: line $LINENO: $BASH_COMMAND failed" >&2' ERR
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 # Source versions come from feeds.toml through the unixnu driver; the defaults are the qualified ones.
@@ -29,34 +31,27 @@ if [ ! -x .cache/fakeroot/usr/local/libexec/availability.pl ]; then
     OBJROOT="$ROOT/build/availability" SYMROOT="$ROOT/build/availability" \
     DSTROOT="$ROOT/.cache/fakeroot" CMAKE="$(command -v cmake)" NINJA="$(command -v ninja)"
 fi
+# Format 2 prepares its ordered patch series through the shared resolver.
+if [ -z "${UNIXNU_PATCH_LIST:-}" ]; then
 # The optional observation hooks overlap existing root/exec patch context.
 # Remove them first so earlier independent patches retain their idempotent checks.
-# The same holds for the boot-time GPU addon mount (zzy), which edits the owner Data mount function inside the systemos patch.
-# Reverse newest first; the loop below re-applies them in name order.
-#
-# The CI object-tree cache keeps the patched work tree from the previous run, so a patch set that
-# changed since then fails to apply ("patch does not apply"). Reset the tracked sources to the
-# pristine checkout first; compiler output lives under untracked paths and survives.
-git -C .cache/xnu-work checkout -- . 2>/dev/null || true
-# Patches that create files from /dev/null leave them behind as untracked paths, and re-applying
-# then fails with "already exists in working directory". These are the only two such files.
-rm -f .cache/xnu-work/osfmk/kern/boot_progress.h
-rm -f .cache/xnu-work/bsd/kern/source_pthread_bootstrap.c
-rm -f .cache/xnu-work/bsd/kern/native_console_log.c
-for LATE_PATCH in "$ROOT/patches/xnu/zzz-boot-progress.patch" "$ROOT/patches/xnu/zzy-native-gpu-addon-mount.patch"; do
+# The same holds for the boot-time GPU addon mount and the staged system apps copy (zzy), which edit the owner Data mount function
+# inside the systemos patch. Reverse newest first; the loop below re-applies them in name order.
+for LATE_PATCH in "$ROOT/patches/xnu/zzz-boot-progress.patch" "$ROOT/patches/xnu/zzyb-native-cryptex-os-view.patch" \
+    "$ROOT/patches/xnu/zzy-staged-system-apps.patch" "$ROOT/patches/xnu/zzy-native-gpu-addon-mount.patch" \
+    "$ROOT/patches/xnu/zzyc-owner-skip-launch-constraints.patch"; do
   if git -C .cache/xnu-work apply --reverse --check "$LATE_PATCH" >/dev/null 2>&1; then
     git -C .cache/xnu-work apply --reverse "$LATE_PATCH"
   fi
 done
-for PATCH in "$ROOT"/patches/xnu/*.patch "$ROOT"/kits/XnuPrelink/patches/*.patch "$ROOT"/kits/NativePrelink/patches/*.patch; do
-  [ -f "$PATCH" ] || continue
+for PATCH in "$ROOT"/patches/xnu/*.patch "$ROOT"/kits/XnuPrelink/patches/*.patch; do
   if ! git -C .cache/xnu-work apply --reverse --check "$PATCH" >/dev/null 2>&1; then
     git -C .cache/xnu-work apply --check "$PATCH"
     git -C .cache/xnu-work apply "$PATCH"
   fi
 done
-# nuwa: the base patches reference native_legacy_display_probe() from
-# bsd_init.c even when NATIVE_LEGACY_DISPLAY is off. The other probe symbols
+fi
+ols
 # are defined by patches/xnu/offline-component-load-probes.patch; this one is
 # supplied here because the legacy display provider is not built during the
 # bootstrap pass. Remove once the sheng display archive is built in CI
@@ -72,25 +67,26 @@ __attribute__((weak)) void native_legacy_display_probe(void)
 }
 NUWA_DISPLAY_STUB
 fi
-
 export XNU_AVAILABILITY_PL=$ROOT/.cache/fakeroot/usr/local/libexec/availability.pl
-# The XNU rules resolve availability.pl through the SDK root, not through an
-# environment variable: <SDK>/usr/local/libexec/availability.pl. Stage it there
-# (the directory does not exist in a stock Xcode SDK) so _symbol_aliasing.h and
-# _posix_availability.h can be generated.
-# The XNU rules resolve availability.pl through the active SDK root, and the
-# kernel is built with SDKROOT=iphoneos, so stage it into both SDKs.
-if [ -f "$XNU_AVAILABILITY_PL" ]; then
-  for _sdkname in iphoneos macosx; do
-    _SDK=$(xcrun --sdk "$_sdkname" --show-sdk-path 2>/dev/null || true)
-    [ -n "$_SDK" ] || continue
-    sudo mkdir -p "$_SDK/usr/local/libexec"
-    sudo cp "$XNU_AVAILABILITY_PL" "$_SDK/usr/local/libexec/availability.pl" 2>/dev/null || true
-    sudo chmod 755 "$_SDK/usr/local/libexec/availability.pl" 2>/dev/null || true
-    echo "staged availability.pl into $_sdkname SDK: $_SDK"
-  done
-fi
 python3 scripts/prepare-xnu-source.py
+# A Linux host builds with upstream clang and GNU tools (scripts/linux): rewrite the few sources that assume
+# Apple's, and pass xnu's make what a Mac provides itself (host compiler, mig, memory and CPU counts).
+XNU_HOST_MAKE_ARGS=()
+if [ "$(uname -s)" = Linux ]; then
+  python3 scripts/linux/prepare-xnu.py source
+  export PLATFORM=iPhoneOS HOST_CC="$CLT_PREFIX/bin/xnu-host-cc" MIGCOM="$CLT_PREFIX/libexec/migcom"
+  XNU_HOST_MAKE_ARGS=(TIGHTBEAMC=tightbeamc-not-supported BUILD_DSYM=0
+    MEMORY_SIZE="$(( $(getconf _PHYS_PAGES) * $(getconf PAGE_SIZE) ))"
+    SYSCTL_HW_PHYSICALCPU="$(nproc)" SYSCTL_HW_LOGICALCPU="$(nproc)"
+    LD_KERNEL_LIBS="$ROOT/.cache/fakeroot/usr/local/lib/kernel/libcc_kext.a")
+fi
+# The first pass of a new tree (XNU_BOOTSTRAP=1, set by the unixnu driver) only has to leave the compile records and
+# link.filelist for the archive builders that run after it, so it links without their archives.
+BOOTSTRAP=${XNU_BOOTSTRAP:-0}
+if [ "$BOOTSTRAP" != 0 ] && [ "$BOOTSTRAP" != 1 ]; then
+  echo 'XNU_BOOTSTRAP must be 0 or 1' >&2
+  exit 1
+fi
 BOOT_PROGRESS=${XNU_BOOT_PROGRESS:-0}
 if [ "$BOOT_PROGRESS" != 0 ] && [ "$BOOT_PROGRESS" != 1 ]; then
   echo 'XNU_BOOT_PROGRESS must be 0 or 1' >&2
@@ -125,9 +121,13 @@ if [ ! -d refer/libplatform/.git ]; then
 fi
 export KERNEL_SDKROOT=$ROOT/.cache/fakeroot
 mkdir -p "$KERNEL_SDKROOT/usr/local/include/kernel" "$ROOT/build/xnu/obj/EXPORT_HDRS/libsa"
-ditto refer/libplatform/include "$KERNEL_SDKROOT/usr/local/include"
-ditto refer/libplatform/private "$KERNEL_SDKROOT/usr/local/include"
-ditto refer/libplatform/private/platform "$KERNEL_SDKROOT/System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/platform"
+copy_tree() {
+  mkdir -p "$2"
+  cp -R "$1/." "$2/"
+}
+copy_tree refer/libplatform/include "$KERNEL_SDKROOT/usr/local/include"
+copy_tree refer/libplatform/private "$KERNEL_SDKROOT/usr/local/include"
+copy_tree refer/libplatform/private/platform "$KERNEL_SDKROOT/System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/platform"
 if [ ! -d refer/libdispatch/.git ]; then
   git clone --depth 1 --branch "$LIBDISPATCH_TAG" https://github.com/apple-oss-distributions/libdispatch.git refer/libdispatch
 fi
@@ -151,13 +151,16 @@ if [ ! -f "$KERNEL_SDKROOT/.xnu-$XNU_VERSION-headers" ]; then
     MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT \
     RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" \
     MAKEJOBS=-j"${JOBS:-4}" OBJROOT="$ROOT/build/xnu/obj" \
-    SYMROOT="$ROOT/build/xnu/sym" DSTROOT="$KERNEL_SDKROOT"
+    SYMROOT="$ROOT/build/xnu/sym" DSTROOT="$KERNEL_SDKROOT" \
+    ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"}
   touch "$KERNEL_SDKROOT/.xnu-$XNU_VERSION-headers"
 fi
 if [ ! -f "$KERNEL_SDKROOT/usr/local/lib/kernel/libfirehose_kernel.a" ]; then
   bash scripts/build-firehose.sh
 fi
-
+if [ "$(uname -s)" = Linux ]; then
+  python3 scripts/linux/prepare-xnu.py libs
+fi
 # The baseline builds the kernel; `all` also checks the Apple kext export ABI.
 EXTRA_MAKE_ARGS=()
 ARM_DT_PLATFORM=${XNU_ARM_DT_PLATFORM:-0}
@@ -428,7 +431,7 @@ if [ "$OWNER_DATA_MOUNT" = 1 ] && [ "$OWNER_BOOT_MANIFEST" != 1 ]; then
   exit 1
 fi
 OWNER_DATA_HEADER=$ROOT/build/xnu/owner-data-volume.h
-python3 - "$OWNER_DATA_HEADER" "$OWNER_DATA_MOUNT" "$NATIVE_RAM_BLOCK" "${XNU_OWNER_DATA_VOLUME_UUID:-}" <<'PY_DATA_UUID'
+python3 - "$OWNER_DATA_HEADER" "$OWNER_DATA_MOUNT" "$NATIVE_RAM_BLOCK" "${XNU_OWNER_DATA_VOLUME_UUID:-}" "${XNU_OWNER_CACHE_VOLUME_UUID:-}" <<'PY_DATA_UUID'
 from pathlib import Path
 import sys
 import uuid
@@ -440,14 +443,22 @@ if sys.argv[2:4] == ['1', '1']:
     except ValueError:
         raise SystemExit('Set XNU_OWNER_DATA_VOLUME_UUID to the actual observed scratch APFS volume UUID')
     text = '#define XNU_OWNER_DATA_VOLUME_UUID "' + value + '"\n'
+# The SystemOS cryptex volume of this image; the sheng value stays the default of the patch.
+cache = '8846FE78-2910-4297-AF97-D59BB6F8FC16'
+if len(sys.argv) > 5 and sys.argv[5]:
+    try:
+        cache = str(uuid.UUID(sys.argv[5])).upper()
+    except ValueError:
+        raise SystemExit('Set XNU_OWNER_CACHE_VOLUME_UUID to the SystemOS volume UUID of the signed policy')
+text += '#define XNU_OWNER_CACHE_VOLUME_UUID "' + cache + '"\n'
 path.parent.mkdir(parents=True, exist_ok=True)
 if not path.exists() or path.read_text() != text:
     path.write_text(text)
 PY_DATA_UUID
 OWNER_DATA_STAMP=$ROOT/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/.owner-data-mount-mode
-if [ "$(cat "$OWNER_DATA_STAMP" 2>/dev/null || echo 0)" != "$OWNER_DATA_MOUNT:$NATIVE_RAM_BLOCK" ]; then
+if [ "$(cat "$OWNER_DATA_STAMP" 2>/dev/null || echo 0)" != "$OWNER_DATA_MOUNT:$NATIVE_RAM_BLOCK:${XNU_OWNER_CACHE_VOLUME_UUID:-}" ]; then
   rm -f "$ROOT/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/kern_exec.o"
-  printf '%s\n' "$OWNER_DATA_MOUNT:$NATIVE_RAM_BLOCK" > "$OWNER_DATA_STAMP"
+  printf '%s\n' "$OWNER_DATA_MOUNT:$NATIVE_RAM_BLOCK:${XNU_OWNER_CACHE_VOLUME_UUID:-}" > "$OWNER_DATA_STAMP"
 fi
 OWNER_CRYPTEX_FILES=${XNU_OWNER_CRYPTEX_FILES:-0}
 if [ "$OWNER_CRYPTEX_FILES" != 0 ] && [ "$OWNER_CRYPTEX_FILES" != 1 ]; then
@@ -568,73 +579,72 @@ else
   EXTRA_MAKE_ARGS+=("platform_tests.o_CFLAGS_ADD=")
 fi
 if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ]; then
-  CRYPTO_ARCHIVE=$ROOT/build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a
-  # Pass 1 deliberately runs without the archive just to emit link.filelist
-  if [ "${XNU_ALLOW_MISSING_CRYPTO_ARCHIVE:-0}" != 1 ]; then
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$CRYPTO_ARCHIVE"
-  fi
   EXTRA_CFLAGS="$EXTRA_CFLAGS -DXNU_SOURCE_CORECRYPTO14=1"
+fi
+if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ] && [ "$BOOTSTRAP" = 0 ]; then
+  CRYPTO_ARCHIVE=$ROOT/build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a
+  test -f "$CRYPTO_ARCHIVE"
   KERNEL_EXTRA_ARCHIVES="-L$KERNEL_SDKROOT/usr/local/lib/kernel -lfirehose_kernel $CRYPTO_ARCHIVE"
   KERNEL_ARCHIVE_DEPENDENCIES=$CRYPTO_ARCHIVE
   if [ "$ADRENO_FIRMWARE_PROBE" = 1 ]; then
     ADRENO_PROBE_ARCHIVE=$ROOT/build/adreno-firmware-probe/libAdrenoFirmwareProbe.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$ADRENO_PROBE_ARCHIVE"
+    test -f "$ADRENO_PROBE_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$ADRENO_PROBE_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $ADRENO_PROBE_ARCHIVE"
   fi
   if [ "$ADRENO_PM4_PROBE" = 1 ]; then
     PM4_PROBE_ARCHIVE=$ROOT/build/adreno-pm4-probe/libAdrenoPM4Probe.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$PM4_PROBE_ARCHIVE"
+    test -f "$PM4_PROBE_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$PM4_PROBE_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $PM4_PROBE_ARCHIVE"
   fi
   if [ "$SMMU4K_PROBE" = 1 ]; then
     SMMU4K_PROBE_ARCHIVE=$ROOT/build/smmu4k-probe/libArmSmmu4KProbe.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$SMMU4K_PROBE_ARCHIVE"
+    test -f "$SMMU4K_PROBE_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$SMMU4K_PROBE_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $SMMU4K_PROBE_ARCHIVE"
   fi
   if [ "$CONSTANT_UPLOADS_PROBE" = 1 ]; then
     CONSTANT_UPLOADS_ARCHIVE=$ROOT/build/constant-uploads-probe/libConstantUploadsProbe.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$CONSTANT_UPLOADS_ARCHIVE"
+    test -f "$CONSTANT_UPLOADS_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$CONSTANT_UPLOADS_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $CONSTANT_UPLOADS_ARCHIVE"
   fi
   if [ "${XNU_ARMVIRT_PLATFORM:-0}" = 1 ]; then
     ARMVIRT_ARCHIVE=$ROOT/build/armvirt-platform/libArmVirtPlatform.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$ARMVIRT_ARCHIVE"
+    test -f "$ARMVIRT_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$ARMVIRT_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $ARMVIRT_ARCHIVE"
   fi
   if [ "$ARM_DT_PLATFORM" = 1 ]; then
     ARM_DT_ARCHIVE=$ROOT/build/armdt-platform/libArmDTPlatform.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$ARM_DT_ARCHIVE"
+    test -f "$ARM_DT_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$ARM_DT_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $ARM_DT_ARCHIVE"
   fi
   if [ "${XNU_ARMCPU:-0}" = 1 ]; then
     ARMCPU_ARCHIVE=$ROOT/build/armcpu/libArmCpu.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$ARMCPU_ARCHIVE"
+    test -f "$ARMCPU_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$ARMCPU_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $ARMCPU_ARCHIVE"
   fi
   if [ "${XNU_NATIVE_UFS:-0}" = 1 ]; then
-    UFS_ARCHIVE=$ROOT/build/native-ufs/libNativeUfs.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$UFS_ARCHIVE"
+    UFS_ARCHIVE=$ROOT/build/sheng-ufs/libShengUfs.a
+    test -f "$UFS_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$UFS_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $UFS_ARCHIVE"
   fi
   if [ "${XNU_NATIVE_ADRENO:-0}" = 1 ]; then
     # NativeAdreno plus its kits (scripts/build-native-adreno-kits.py). No personality is installed: the
     # board probe calls NativeAdrenoGmuContextBringup directly once it has powered the GPU CX domain.
-    ADRENO_ARCHIVE=$ROOT/build/native-adreno/libNativeAdreno.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$ADRENO_ARCHIVE"
+    ADRENO_ARCHIVE=$ROOT/build/adreno740/libAdreno740.a
+    test -f "$ADRENO_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$ADRENO_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $ADRENO_ARCHIVE"
   fi
   if [ "$NATIVE_MOBILE_DISPLAY" = 1 ]; then
-    MOBILE_DISPLAY_ARCHIVE=$ROOT/build/native-mobile-display/libNativeMobileDisplay.late.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$MOBILE_DISPLAY_ARCHIVE"
+    MOBILE_DISPLAY_ARCHIVE=$ROOT/build/gop-framebuffer/libGopFramebuffer.late.a
+    test -f "$MOBILE_DISPLAY_ARCHIVE"
     python3 - "$MOBILE_DISPLAY_ARCHIVE" <<'PY_MOBILE_DISPLAY'
 import hashlib, json, sys
 from pathlib import Path
@@ -648,7 +658,7 @@ PY_MOBILE_DISPLAY
   fi
   if [ "$NATIVE_LEGACY_DISPLAY" = 1 ]; then
     LEGACY_DISPLAY_ARCHIVE=$ROOT/build/native-legacy-display/libNativeLegacyDisplay.late.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$LEGACY_DISPLAY_ARCHIVE"
+    test -f "$LEGACY_DISPLAY_ARCHIVE"
     python3 - "$LEGACY_DISPLAY_ARCHIVE" "$ROOT" <<'PY_LEGACY_DISPLAY'
 import hashlib, json, sys
 from pathlib import Path
@@ -663,20 +673,20 @@ PY_LEGACY_DISPLAY
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $LEGACY_DISPLAY_ARCHIVE"
   fi
   if [ "${XNU_NATIVE_AES:-0}" = 1 ]; then
-    AES_ARCHIVE=${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/native-aes/libNativeAES.a}
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$AES_ARCHIVE"
+    AES_ARCHIVE=${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/software-aes/libSoftwareAES.a}
+    test -f "$AES_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$AES_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $AES_ARCHIVE"
   fi
   if [ "${XNU_NATIVE_VIRTIO_BLOCK:-0}" = 1 ]; then
-    VIRTIO_ARCHIVE=${XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE:-$ROOT/build/native-virtio-block/libNativeVirtioBlock.a}
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$VIRTIO_ARCHIVE"
+    VIRTIO_ARCHIVE=${XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE:-$ROOT/build/virtio-mmio-block/libVirtioMmioBlock.a}
+    test -f "$VIRTIO_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$VIRTIO_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $VIRTIO_ARCHIVE"
   fi
   if [ "$NATIVE_OFFLINE_GPU" = 1 ]; then
     GPU_BROKER_ARCHIVE=$ROOT/build/native-offline-gpu/libNativeOfflineGPU.late.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$GPU_BROKER_ARCHIVE"
+    test -f "$GPU_BROKER_ARCHIVE"
     python3 - "$GPU_BROKER_ARCHIVE" "$ROOT" <<'PY_GPU_BROKER'
 import hashlib,json,sys
 from pathlib import Path
@@ -686,21 +696,21 @@ if hashlib.sha256(archive.read_bytes()).hexdigest()!=report['archive_sha256']:
 for name,digest in report['source_sha256'].items():
     if hashlib.sha256((root/name).read_bytes()).hexdigest()!=digest:
         raise SystemExit('Rebuild the GPU broker after changing '+name)
-if hashlib.sha256((root/'build/native-virtio-console/libNativeVirtioConsole.a').read_bytes()).hexdigest()!=report['console_archive_sha256']:
+if hashlib.sha256((root/'build/virtio-mmio-console/libVirtioMmioConsole.a').read_bytes()).hexdigest()!=report['console_archive_sha256']:
     raise SystemExit('Rebuild the GPU broker against the actual byte-transport archive')
 PY_GPU_BROKER
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$GPU_BROKER_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $GPU_BROKER_ARCHIVE"
   fi
   if [ "$NATIVE_VIRTIO_CONSOLE" = 1 ]; then
-    CONSOLE_ARCHIVE=$ROOT/build/native-virtio-console/libNativeVirtioConsole.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$CONSOLE_ARCHIVE"
+    CONSOLE_ARCHIVE=$ROOT/build/virtio-mmio-console/libVirtioMmioConsole.a
+    test -f "$CONSOLE_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$CONSOLE_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $CONSOLE_ARCHIVE"
   fi
   if [ "$NATIVE_RAM_BLOCK" = 1 ]; then
-    RAM_BLOCK_ARCHIVE=$ROOT/build/native-ram-block/libNativeRamBlock.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$RAM_BLOCK_ARCHIVE"
+    RAM_BLOCK_ARCHIVE=$ROOT/build/ram-block/libRamBlock.a
+    test -f "$RAM_BLOCK_ARCHIVE"
     if [ "${XNU_NATIVE_VIRTIO_BLOCK:-0}" = 1 ]; then
       # Both transports import the same original class. Keep one exact alias
       # definition; link the real RAM transport object, not duplicate aliases.
@@ -719,8 +729,8 @@ first, second = [record['bindings'] for record in records]
 if any(first.get(name) != value for name, value in second.items()):
     raise SystemExit('RAM transport imports must match the already linked original storage bindings')
 PY_BINDINGS
-      RAM_BLOCK_OBJECT=$ROOT/build/native-ram-block/NativeRamBlock.o
-      [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$RAM_BLOCK_OBJECT"
+      RAM_BLOCK_OBJECT=$ROOT/build/ram-block/NativeRamBlock.o
+      test -f "$RAM_BLOCK_OBJECT"
       KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES $RAM_BLOCK_OBJECT"
     else
       KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$RAM_BLOCK_ARCHIVE"
@@ -730,26 +740,26 @@ PY_BINDINGS
   if [ "${XNU_SOURCE_PTHREAD:-0}" = 1 ]; then
     PTHREAD_ARCHIVE=$ROOT/build/libpthread-kernel/libpthread_kernel.a
     PTHREAD_BOOTSTRAP=$ROOT/build/libpthread-kernel/source_pthread_bootstrap.o
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$PTHREAD_ARCHIVE"
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$PTHREAD_BOOTSTRAP"
+    test -f "$PTHREAD_ARCHIVE"
+    test -f "$PTHREAD_BOOTSTRAP"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$PTHREAD_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $PTHREAD_ARCHIVE"
   fi
   if [ "$OWNER_ROOT_PROBE" = 1 ]; then
     VERIFIED_ROOT_ARCHIVE=${XNU_VERIFIED_ROOT_ARCHIVE:-$ROOT/build/verified-root-xnu/libVerifiedRootProbe.a}
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$VERIFIED_ROOT_ARCHIVE"
+    test -f "$VERIFIED_ROOT_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$VERIFIED_ROOT_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $VERIFIED_ROOT_ARCHIVE"
   fi
   if [ "$MOCKFS_MODE" = 1 ]; then
     MOCKFS_ARCHIVE=$ROOT/build/mockfs-fixture/libmockfs_fixture.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$MOCKFS_ARCHIVE"
+    test -f "$MOCKFS_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$MOCKFS_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $MOCKFS_ARCHIVE"
   fi
   if [ "$SHENG_PMGR" = 1 ]; then
     PMGR_ARCHIVE=$ROOT/build/sheng-platform-power/libShengPlatformPower.a
-    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$PMGR_ARCHIVE"
+    test -f "$PMGR_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$PMGR_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $PMGR_ARCHIVE"
   fi
@@ -762,32 +772,34 @@ PY_BINDINGS
   EXTRA_MAKE_ARGS+=("LD_KERNEL_ARCHIVES=$KERNEL_EXTRA_ARCHIVES")
   EXTRA_MAKE_ARGS+=("XNU_EXTERNAL_KERNEL_ARCHIVES=$KERNEL_ARCHIVE_DEPENDENCIES")
 fi
-python3 - "${XNU_NATIVE_AES:-0}" "${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/native-aes/libNativeAES.a}" \
-  "${XNU_NATIVE_VIRTIO_BLOCK:-0}" "${XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE:-$ROOT/build/native-virtio-block/libNativeVirtioBlock.a}" \
+python3 - "${XNU_NATIVE_AES:-0}" "${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/software-aes/libSoftwareAES.a}" \
+  "${XNU_NATIVE_VIRTIO_BLOCK:-0}" "${XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE:-$ROOT/build/virtio-mmio-block/libVirtioMmioBlock.a}" \
   "$OWNER_ROOT_PROBE" "${XNU_VERIFIED_ROOT_ARCHIVE:-$ROOT/build/verified-root-xnu/libVerifiedRootProbe.a}" \
-  "$NATIVE_RAM_BLOCK" "$ROOT/build/native-ram-block/libNativeRamBlock.a" \
+  "$NATIVE_RAM_BLOCK" "$ROOT/build/ram-block/libRamBlock.a" \
   "$ADRENO_FIRMWARE_PROBE" "$ROOT/build/adreno-firmware-probe/libAdrenoFirmwareProbe.a" \
   "$ADRENO_PM4_PROBE" "$ROOT/build/adreno-pm4-probe/libAdrenoPM4Probe.a" \
   "$SMMU4K_PROBE" "$ROOT/build/smmu4k-probe/libArmSmmu4KProbe.a" \
   "$CONSTANT_UPLOADS_PROBE" "$ROOT/build/constant-uploads-probe/libConstantUploadsProbe.a" \
-  "$NATIVE_VIRTIO_CONSOLE" "$ROOT/build/native-virtio-console/libNativeVirtioConsole.a" \
+  "$NATIVE_VIRTIO_CONSOLE" "$ROOT/build/virtio-mmio-console/libVirtioMmioConsole.a" \
   "$NATIVE_OFFLINE_GPU" "$ROOT/build/native-offline-gpu/libNativeOfflineGPU.late.a" \
   "$SHENG_PMGR" "$ROOT/build/sheng-platform-power/libShengPlatformPower.a" \
-  "${XNU_NATIVE_ADRENO:-0}" "$ROOT/build/native-adreno/libNativeAdreno.a" <<'PY'
+  "${XNU_NATIVE_ADRENO:-0}" "$ROOT/build/adreno740/libAdreno740.a" <<'PY'
 import hashlib
 from pathlib import Path
 import sys
 directory = Path('build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837')
 stamp = directory / '.native-aes-link-input'
-def fingerprint(mode, archive):
-    # A missing archive means this pass runs before the builders (see
-    # XNU_ALLOW_MISSING_ARCHIVES); treat it as disabled instead of crashing.
-    path = Path(archive)
-    if mode != '1' or not path.is_file():
+
+
+def state(mode, archive):
+    if mode != '1':
         return 'disabled'
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-identity = '|'.join(mode + ':' + fingerprint(mode, archive)
-                    for mode, archive in zip(sys.argv[1::2], sys.argv[2::2]))
+    # The bootstrap pass of a new tree links before the archive builders have run.
+    path = Path(archive)
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else 'missing'
+
+
+identity = '|'.join(mode + ':' + state(mode, archive) for mode, archive in zip(sys.argv[1::2], sys.argv[2::2]))
 if not stamp.exists() or stamp.read_text() != identity:
     # Make does not track selection of an older alternative external archive.
     # Rebuild the conditional personality and relink when this input changes.
@@ -806,7 +818,7 @@ make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}" SDKROOT="${XNU_SDKROOT:-iph
   DEPLOYMENT_LINKER_FLAGS="-Wl,-ios_version_min,17.0" \
   RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" \
   BUILD_LTO=0 BOUND_CHECKS=0 BUILD_WERROR="${XNU_BUILD_WERROR:-0}" MAKEJOBS=-j"${JOBS:-4}" \
-  CFLAGS_EXTRA="$EXTRA_CFLAGS" "${EXTRA_MAKE_ARGS[@]}" \
+  CFLAGS_EXTRA="$EXTRA_CFLAGS" "${EXTRA_MAKE_ARGS[@]}" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} \
   OBJROOT="$ROOT/build/xnu/ios-obj" SYMROOT="$ROOT/build/xnu/ios-sym" DSTROOT="$ROOT/build/xnu/ios-dst"
 if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ] && [ "$CRYPTO_BOOTSTRAP_MODE" = source ]; then
   python3 scripts/seal-source-crypto-kernel.py \

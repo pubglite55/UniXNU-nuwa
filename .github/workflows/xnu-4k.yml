@@ -87,21 +87,6 @@ jobs:
           export UNIXNU_DEVICE="$PWD"
           ./unixnu build -D "$PWD" kernel 2>&1 | tee /tmp/kernel.log | tail -120
 
-      # The driver reports a bare 'bash failed (1)' for the bootstrap pass with
-      # the log ending right after the firehose step, i.e. a silent set -e trip.
-      # Re-run the same script from the assembled tree with -x to see the line.
-      - name: Debug the bootstrap pass with tracing
-        if: failure()
-        run: |
-          TREE=out/nuwa/tree
-          if [ -d "$TREE" ]; then
-            cd "$TREE"
-            bash -x scripts/build-xnu-4k-baseline.sh > /tmp/bootstrap-trace.log 2>&1 || true
-            echo '=== last 60 trace lines ==='
-            tail -60 /tmp/bootstrap-trace.log
-          else
-            echo 'no tree directory'
-          fi
       - name: Collect
         if: always()
         run: |
@@ -123,7 +108,6 @@ jobs:
           path: |
             /tmp/kernel.log
             out/driver-logs
-            /tmp/bootstrap-trace.log
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: always()
