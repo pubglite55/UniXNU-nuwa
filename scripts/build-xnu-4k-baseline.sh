@@ -706,7 +706,7 @@ PY_LEGACY_DISPLAY
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $LEGACY_DISPLAY_ARCHIVE"
   fi
   if [ "${XNU_NATIVE_AES:-0}" = 1 ]; then
-    AES_ARCHIVE=${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/software-aes/libSoftwareAES.a}
+    AES_ARCHIVE=${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/native-aes/libNativeAES.a}
     test -f "$AES_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$AES_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $AES_ARCHIVE"
@@ -805,7 +805,9 @@ PY_BINDINGS
   EXTRA_MAKE_ARGS+=("LD_KERNEL_ARCHIVES=$KERNEL_EXTRA_ARCHIVES")
   EXTRA_MAKE_ARGS+=("XNU_EXTERNAL_KERNEL_ARCHIVES=$KERNEL_ARCHIVE_DEPENDENCIES")
 fi
-python3 - "${XNU_NATIVE_AES:-0}" "${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/software-aes/libSoftwareAES.a}" \
+python3 - "${XNU_NATIVE_AES:-0}" # build-arm-driver.py writes the NativeAES component to build/native-aes and
+# names the archive after the component, not after the submodule.
+"${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/native-aes/libNativeAES.a}" \
   "${XNU_NATIVE_VIRTIO_BLOCK:-0}" "${XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE:-$ROOT/build/virtio-mmio-block/libVirtioMmioBlock.a}" \
   "$OWNER_ROOT_PROBE" "${XNU_VERIFIED_ROOT_ARCHIVE:-$ROOT/build/verified-root-xnu/libVerifiedRootProbe.a}" \
   "$NATIVE_RAM_BLOCK" "$ROOT/build/ram-block/libRamBlock.a" \
