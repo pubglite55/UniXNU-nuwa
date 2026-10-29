@@ -19,6 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   KERNEL_CONFIG: ${{ inputs.kernel_config || 'DEVELOPMENT' }}
   # Bring-up personality: the set fuxi_defconfig would pass, minus the gates
   # that need a signing policy bundle from a real OS/SystemOS DMG.
