@@ -94,6 +94,9 @@ jobs:
           find build/xnu -name 'kernel.*' -o -name 'mach.*' 2>/dev/null | head -20
           cp build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf out/ 2>/dev/null || true
           cp build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/kernel.development.bcm2837 out/ 2>/dev/null || true
+          # The driver keeps full pass logs here; they are the real diagnostic.
+          mkdir -p out/driver-logs && cp -R out/nuwa/logs/. out/driver-logs/ 2>/dev/null || true
+          ls -la out/driver-logs 2>/dev/null | head -20 || true
           ls -la out
           (cd out && shasum -a 256 * > SHA256SUMS) || true
 
@@ -103,8 +106,8 @@ jobs:
         with:
           name: xnu-4k-logs
           path: |
-            /tmp/pass0.log
-            /tmp/pass1.log
+            /tmp/kernel.log
+            out/driver-logs
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: always()
