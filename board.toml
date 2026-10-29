@@ -58,8 +58,13 @@ archives = [
   "build-arm-driver.py ArmCpu",
   "build-arm-driver.py NativeAES",
   "prepare-storage-headers.py",
-  "build-arm-driver.py NativeUfs --unverified",
-  "build-ufs-original-bindings.py",
+  # NativeUfs (UniXNU/ShengUfs) needs native_ufs_read_ticks and timerTicks from
+  # UniXNU-sheng package/BootProgress.c, which only builds with
+  # XNU_BOOT_PROGRESS=1, and that layer requires the fuxi/sheng owner-root and
+  # Virtio block paths. Left out for the first kernel, matching
+  # CONFIG_XNU_NATIVE_UFS=n in the defconfig; the storage port is the next step.
+  # "build-arm-driver.py NativeUfs --unverified",
+  # "build-ufs-original-bindings.py",
   "build-sheng-platform-power.py",
   "build-libpthread-kernel.py",
   # 4K chain: the stub supplies the legacy display hooks so the kernel links
