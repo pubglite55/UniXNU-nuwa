@@ -76,7 +76,9 @@ jobs:
           XNU_ALLOW_MISSING_ARCHIVES: "1"
         run: |
           set -o pipefail
-          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/pass0.log | tail -80 || true
+          bash -x scripts/build-xnu-4k-baseline.sh > /tmp/pass0.log 2>&1 || true
+          echo "pass0 log lines: $(wc -l < /tmp/pass0.log)"
+          tail -40 /tmp/pass0.log
           echo '--- artefacts pass 0 must produce ---'
           ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || echo 'link.filelist MISSING'
           ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json 2>/dev/null || echo 'cpo.json MISSING'
@@ -112,7 +114,9 @@ jobs:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
         run: |
           set -o pipefail
-          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/xnu-4k.log | tail -300
+          bash -x scripts/build-xnu-4k-baseline.sh > /tmp/pass1.log 2>&1
+          echo "pass1 log lines: $(wc -l < /tmp/pass1.log)"
+          tail -60 /tmp/pass1.log
 
       - name: Collect
         if: always()
@@ -124,6 +128,15 @@ jobs:
           ls -la out
           (cd out && shasum -a 256 * > SHA256SUMS) || true
 
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xnu-4k-logs
+          path: |
+            /tmp/pass0.log
+            /tmp/pass1.log
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: always()
         with:
