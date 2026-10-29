@@ -68,7 +68,13 @@ while index < len(arguments):
     index += 1
 command.extend(['-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter',
                 '-Wno-c99-designator', '-Wno-reorder-init-list', '-Wno-deprecated-enum-enum-conversion',
-                '-Wno-unknown-warning-option', '-I', str(ROOT / '.cache/xnu-work/osfmk'),
+                '-Wno-unknown-warning-option',
+                        # Xcode 26 clang warns about a virtual method in a final
+                        # class inside the exported OSSymbol.h; the xnu headers are
+                        # not ours to change and -Werror would otherwise stop the
+                        # driver archives.
+                        '-Wno-unnecessary-virtual-specifier',
+                        '-I', str(ROOT / '.cache/xnu-work/osfmk'),
                 '-I', str(ROOT / '.cache/xnu-work/iokit')])
 if component in ('NativeVirtioBlock', 'NativeRamBlock', 'NativeUfs'):
     command += ['-I', str(ROOT / 'build/storage-abi/include')]
