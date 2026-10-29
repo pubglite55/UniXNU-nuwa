@@ -49,7 +49,14 @@ jobs:
 
       - name: Deps
         run: |
-          brew install cmake ninja unifdef
+          # The driver needs keg-only Homebrew LLVM (archive builders), LLD
+          # (payload panic screen), mtools and dtc (boot image / device tree).
+          brew install llvm lld mtools dtc
+
+          if ! command -v unifdef >/dev/null; then
+            brew install unifdef
+            echo "$(brew --prefix unifdef)/bin" >> "$GITHUB_PATH"
+          fi
           printf '#!/bin/sh\nexit 0\n' | sudo tee /usr/local/bin/xcodes >/dev/null
           sudo chmod +x /usr/local/bin/xcodes
           sw_vers
@@ -58,65 +65,22 @@ jobs:
           sudo xcode-select -s "$XC"
           xcodebuild -version
 
-
-      # build-corecrypto-14.py --namespace needs the XNU symbol list, which
-      # xnu_symbols.py reads from the kernel's link.filelist. That file only
-      # exists after a kernel link pass, and the link needs the corecrypto
-      # archive. Break the cycle the way upstream does: link once without
-      # corecrypto, build the provider, then link for real (incremental).
-      # The kernel build and the component archives depend on each other:
-      # build-arm-driver.py reads the kernel's per-object .cpo.json (compile
-      # flags), while the kernel link wants the archives. Upstream resolves it
-      # by compiling the kernel first (which writes .cpo.json and
-      # link.filelist), then building the archives, then linking again.
-      # XNU_ALLOW_MISSING_ARCHIVES skips every test -f assertion so pass 0 can
-      # reach the compile stage with nothing built yet.
-      - name: Pass 0 - compile kernel to emit .cpo.json and link.filelist
-        env:
-          XNU_ALLOW_MISSING_ARCHIVES: "1"
+      # ordering (tree assembly, archive builders, corecrypto, patches, the
+      # kernel link) and the header staging that the raw script assumes has
+      # already happened. Calling the script directly is what produced the
+      # long chain of missing archive / missing header failures.
+      - name: Assemble the build tree
         run: |
           set -o pipefail
-          bash -x scripts/build-xnu-4k-baseline.sh > /tmp/pass0.log 2>&1 || true
-          echo "pass0 log lines: $(wc -l < /tmp/pass0.log)"
-          tail -40 /tmp/pass0.log
-          echo '--- artefacts pass 0 must produce ---'
-          ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || echo 'link.filelist MISSING'
-          ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json 2>/dev/null || echo 'cpo.json MISSING'
+          ./unixnu defconfig nuwa4k
+          ./unixnu tree 2>&1 | tail -40
 
-      - name: Build component archives
-        run: |
-          set -euo pipefail
-          run_archive() { echo "=== $* ==="; python3 "scripts/$1" ${@:2}; }
-          run_archive build-arm-driver.py ArmDTPlatform
-          run_archive build-arm-driver.py ArmCpu
-          run_archive build-arm-driver.py NativeAES
-          run_archive prepare-storage-headers.py
-          run_archive build-arm-driver.py NativeUfs --unverified
-          run_archive build-ufs-original-bindings.py
-          run_archive build-sheng-platform-power.py
-          run_archive build-libpthread-kernel.py
-          run_archive build-legacy-stub.py
-          ls -l build/armdt-platform/*.a build/legacy-stub/*.a 2>/dev/null || true
-
-      - name: Build corecrypto provider
-        run: |
-          set -euo pipefail
-          if [ ! -d refer/corecrypto-2023/.git ]; then
-            git clone https://github.com/ONLYA/corecrypto-2023.git refer/corecrypto-2023
-          fi
-          git -C refer/corecrypto-2023 checkout -q 11fba65b12d8830630e248dfa8344caf8b065f26
-          python3 scripts/build-corecrypto-14.py
-          python3 scripts/build-corecrypto-14.py --namespace
-          ls -l build/corecrypto-2023/*.a
-
-      - name: Pass 1 - build the kernel for real
+      - name: Build kernel
         env:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
         run: |
           set -o pipefail
-          bash -x scripts/build-xnu-4k-baseline.sh > /tmp/pass1.log 2>&1
-          echo "pass1 log lines: $(wc -l < /tmp/pass1.log)"
-          tail -60 /tmp/pass1.log
+          ./unixnu build kernel 2>&1 | tee /tmp/kernel.log | tail -120
 
       - name: Collect
         if: always()
