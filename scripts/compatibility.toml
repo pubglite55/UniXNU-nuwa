@@ -1,0 +1,10 @@
+[scripts]
+"build-native-adreno-accelerator.py" = "build-adreno740-accelerator.py"
+"build-native-metal-bridge.py" = "build-adreno-metal-bridge.py"
+"build-native-aes-bindings.py" = "build-software-aes-bindings.py"
+"build-native-hid-input.py" = "build-sheng-hid-input.py"
+"build-native-virtio-bindings.py" = "build-virtio-mmio-bindings.py"
+"build-native-adreno-kits.py" = "build-adreno740-kits.py"
+"build-native-legacy-display.py" = "build-gop-legacy-display.py"
+"build-native-mobile-display.py" = "build-gop-framebuffer.py"
+"build-native-wifi.py" = "build-ath12k-wifi.py"
