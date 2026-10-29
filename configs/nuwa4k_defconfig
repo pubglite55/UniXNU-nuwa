@@ -19,7 +19,13 @@ CONFIG_XNU_SOURCE_CORECRYPTO14=y
 CONFIG_XNU_SOURCE_PTHREAD=y
 CONFIG_XNU_ARM_DT_PLATFORM=y
 CONFIG_XNU_ARMCPU=y
-CONFIG_XNU_NATIVE_UFS=y
+# The ShengUfs driver (UniXNU/ShengUfs, installed as drivers/NativeUfs)
+# references native_ufs_read_ticks and timerTicks, which only exist when
+# XNU_BOOT_PROGRESS=1 builds package/BootProgress.c, and that layer demands
+# the owner-root audit and Virtio block paths (fuxi/sheng specifics). Until
+# those are ported to nuwa, leave UFS off so the kernel itself links; the
+# storage driver is the next bring-up step, not this one.
+CONFIG_XNU_NATIVE_UFS=n
 CONFIG_XNU_NATIVE_AES=y
 CONFIG_XNU_DT_PANIC_REGION=y
 CONFIG_XNU_NATIVE_ARCH_TIMER=y
