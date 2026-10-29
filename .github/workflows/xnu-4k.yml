@@ -73,15 +73,19 @@ jobs:
         run: |
           set -o pipefail
           chmod +x unixnu scripts/build-xnu-4k-baseline.sh scripts/linux/* 2>/dev/null || true
-          ./unixnu defconfig nuwa4k
-          ./unixnu tree 2>&1 | tail -40
+          # This checkout is both the driver tree and the device repository
+          # (board.toml lives at the root), so point -D at it.
+          export UNIXNU_DEVICE="$PWD"
+          ./unixnu defconfig -D "$PWD" nuwa4k
+          ./unixnu tree -D "$PWD" 2>&1 | tail -40
 
       - name: Build kernel
         env:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
         run: |
           set -o pipefail
-          ./unixnu build kernel 2>&1 | tee /tmp/kernel.log | tail -120
+          export UNIXNU_DEVICE="$PWD"
+          ./unixnu build -D "$PWD" kernel 2>&1 | tee /tmp/kernel.log | tail -120
 
       - name: Collect
         if: always()
