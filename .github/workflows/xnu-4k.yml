@@ -97,6 +97,8 @@ jobs:
       - name: Assemble the build tree
         run: |
           set -o pipefail
+          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)/Contents/Developer
+          export PATH="$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/bin:$PATH"
           chmod +x unixnu scripts/build-xnu-4k-baseline.sh scripts/linux/* 2>/dev/null || true
           # This checkout is both the driver tree and the device repository
           # (board.toml lives at the root), so point -D at it.
@@ -109,6 +111,15 @@ jobs:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
         run: |
           set -o pipefail
+          # /usr/bin/clang is the Command Line Tools shim and stays at 15.0 no
+          # matter what xcode-select says; its mig then passes -mach_msg2 to a
+          # clang that does not know the flag. Put the selected Xcode's
+          # toolchain in front instead.
+          export DEVELOPER_DIR=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)/Contents/Developer
+          export PATH="$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/bin:$PATH"
+          echo "DEVELOPER_DIR=$DEVELOPER_DIR"
+          which -a clang | head -4
+          clang --version | head -2
           export UNIXNU_DEVICE="$PWD"
           ./unixnu build -D "$PWD" kernel 2>&1 | tee /tmp/kernel.log | tail -120
 
