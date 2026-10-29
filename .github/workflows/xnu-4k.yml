@@ -97,6 +97,12 @@ jobs:
       - name: Assemble the build tree
         run: |
           set -o pipefail
+          # ShengUfs and the other board-selected drivers are not gitmodules
+          # entries: the device repository supplies them before the tree is
+          # assembled, because the driver copies drivers/ into the tree.
+          fetch_driver() { [ -d "$1/.git" ] || git clone --depth 1 "$2" "$1"; }
+          fetch_driver drivers/NativeUfs https://github.com/UniXNU/ShengUfs.git
+          ls -d drivers/*/ 2>/dev/null | head -20
           export DEVELOPER_DIR=$(ls -d /Applications/Xcode_2[6-9]*.app /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -1)/Contents/Developer
           export PATH="$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/bin:$PATH"
           chmod +x unixnu scripts/build-xnu-4k-baseline.sh scripts/linux/* 2>/dev/null || true
