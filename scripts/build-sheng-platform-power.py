@@ -10,7 +10,12 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/sheng-platform-power'
 OUT.mkdir(parents=True, exist_ok=True)
-sys.path.insert(0, str(ROOT / 'kits/NativePrelink'))
+# The kit submodule is kits/XnuPrelink; the older name still works for trees
+# that have not migrated.
+for _kit in ('kits/XnuPrelink', 'kits/NativePrelink'):
+    if (ROOT / _kit / 'native_prelink.py').is_file():
+        sys.path.insert(0, str(ROOT / _kit))
+        break
 from native_prelink import macho, backed_offset, exports
 
 
