@@ -78,11 +78,17 @@ export XNU_AVAILABILITY_PL=$ROOT/.cache/fakeroot/usr/local/libexec/availability.
 # environment variable: <SDK>/usr/local/libexec/availability.pl. Stage it there
 # (the directory does not exist in a stock Xcode SDK) so _symbol_aliasing.h and
 # _posix_availability.h can be generated.
-_SDK=$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)
-if [ -n "$_SDK" ] && [ -f "$XNU_AVAILABILITY_PL" ]; then
-  sudo mkdir -p "$_SDK/usr/local/libexec"
-  sudo cp "$XNU_AVAILABILITY_PL" "$_SDK/usr/local/libexec/availability.pl" || echo "warning: staged availability.pl copy failed" >&2
-  sudo chmod 755 "$_SDK/usr/local/libexec/availability.pl" || true
+# The XNU rules resolve availability.pl through the active SDK root, and the
+# kernel is built with SDKROOT=iphoneos, so stage it into both SDKs.
+if [ -f "$XNU_AVAILABILITY_PL" ]; then
+  for _sdkname in iphoneos macosx; do
+    _SDK=$(xcrun --sdk "$_sdkname" --show-sdk-path 2>/dev/null || true)
+    [ -n "$_SDK" ] || continue
+    sudo mkdir -p "$_SDK/usr/local/libexec"
+    sudo cp "$XNU_AVAILABILITY_PL" "$_SDK/usr/local/libexec/availability.pl" 2>/dev/null || true
+    sudo chmod 755 "$_SDK/usr/local/libexec/availability.pl" 2>/dev/null || true
+    echo "staged availability.pl into $_sdkname SDK: $_SDK"
+  done
 fi
 python3 scripts/prepare-xnu-source.py
 BOOT_PROGRESS=${XNU_BOOT_PROGRESS:-0}
