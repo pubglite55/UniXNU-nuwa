@@ -58,12 +58,41 @@ jobs:
           xcodebuild -version
 
 
-      - name: Build 4K kernel
+      # build-corecrypto-14.py --namespace needs the XNU symbol list, which
+      # xnu_symbols.py reads from the kernel's link.filelist. That file only
+      # exists after a kernel link pass, and the link needs the corecrypto
+      # archive. Break the cycle the way upstream does: link once without
+      # corecrypto, build the provider, then link for real (incremental).
+      - name: Pass 1 - link without corecrypto to produce link.filelist
+        env:
+          MAKEFLAGS: ""
+          XNU_SOURCE_CORECRYPTO14: "0"
+          XNU_CRYPTO_BOOTSTRAP: "source"
+        run: |
+          set -o pipefail
+          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tail -200 || true
+          echo '--- link.filelist? ---'
+          ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || echo 'MISSING'
+
+      # The namespaced provider is what the baseline asserts with a bare
+      # test -f. Build it now that link.filelist exists.
+      - name: Build corecrypto provider
+        run: |
+          set -o pipefail
+          if [ ! -d refer/corecrypto-2023/.git ]; then
+            git clone https://github.com/ONLYA/corecrypto-2023.git refer/corecrypto-2023
+          fi
+          git -C refer/corecrypto-2023 checkout -q 11fba65b12d8830630e248dfa8344caf8b065f26
+          python3 scripts/build-corecrypto-14.py
+          python3 scripts/build-corecrypto-14.py --namespace
+          ls -l build/corecrypto-2023/*.a
+
+      - name: Pass 2 - build the kernel with corecrypto
         env:
           MAKEFLAGS: ${{ inputs.keep_going == 'false' && '' || '-k' }}
-        # -x so a bare set -e / set -u trip is visible in the log instead of a
-        # silent exit 1.
-        run: bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tail -400
+        run: |
+          set -o pipefail
+          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/xnu-4k.log | tail -400
 
       - name: Collect
         if: always()
