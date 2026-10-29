@@ -1,0 +1,176 @@
+diff --git a/bsd/kern/kern_exec.c b/bsd/kern/kern_exec.c
+--- a/bsd/kern/kern_exec.c
++++ b/bsd/kern/kern_exec.c
+@@ -7483,7 +7483,162 @@
+ 			native_gpu_addon_written++;
+ 		}
+ 		at += (packed + 7) & ~7ULL;
++	}
++}
++/* The OS cryptex where iPadOS looks for it. The root volume's entries for cryptex content are links into /System/Cryptexes/OS, which
++ * leads to /private/preboot/Cryptexes/OS; WebKit's processes are ExtensionKit extensions reached that way
++ * (/System/Library/ExtensionKit/Extensions/WebContentExtension.appex and its Networking and GPU siblings), so with the path missing
++ * Safari could not start them and its pages never loaded. The SystemOS volume is already the upper layer of the root union: its
++ * /System and /usr are bound read-only over /private/preboot/Cryptexes/OS/{System,usr}, not as unions, so a lookup there stays on the
++ * SystemOS volume and never meets the root's links again. The two mount points are owner Data directories under
++ * /private/var/ngpu/preboot, shown over the root's empty /private/preboot as a read-only union. Never fatal; stage and status go to the
++ * boot log: 1 mount points made, 2 preboot shown, 3 System bound, 4 usr bound, 5 an extension of WebKit visible through the path. */
++volatile int native_cryptex_os_stage = 0;
++volatile int native_cryptex_os_status = -1;
++static int
++native_cryptex_os_bind(proc_t p, user_addr_t scratch, const char *source, const char *point, int flags)
++{
++	struct mount_args request = {.type = scratch + 0xa00, .path = scratch + 0xa20, .flags = MNT_RDONLY | flags,
++	    .data = scratch + 0xb00};
++	int32_t result = 0;
++	int error;
++	if ((error = copyout("bindfs", request.type, 7)) || (error = copyout(point, request.path, strlen(point) + 1)) ||
++	    (error = copyout(source, request.data, strlen(source) + 1))) {
++		return error;
++	}
++	native_bindfs_boot_mount = 1;
++	error = mount(p, &request, &result);
++	native_bindfs_boot_mount = 0;
++	return error;
++}
++static void
++native_cryptex_os_view(proc_t p, user_addr_t scratch)
++{
++	static const char *const points[] = {"/private/var/ngpu/preboot/Cryptexes/OS/System/", "/private/var/ngpu/preboot/Cryptexes/OS/usr/"};
++	vnode_t probe = NULLVP;
++	int error = 0;
++	for (size_t i = 0; i < sizeof(points) / sizeof(points[0]) && !error; ++i) {
++		error = native_gpu_addon_parents(p, scratch, points[i]);
++	}
++	if (error) {
++		native_cryptex_os_status = error;
++		return;
++	}
++	native_cryptex_os_stage = 1;
++	if ((error = native_cryptex_os_bind(p, scratch, "/private/var/ngpu/preboot", "/private/preboot", MNT_UNION))) {
++		native_cryptex_os_status = error;
++		return;
++	}
++	native_cryptex_os_stage = 2;
++	if ((error = native_cryptex_os_bind(p, scratch, "/System", "/private/preboot/Cryptexes/OS/System", 0))) {
++		native_cryptex_os_status = error;
++		return;
++	}
++	native_cryptex_os_stage = 3;
++	if ((error = native_cryptex_os_bind(p, scratch, "/usr", "/private/preboot/Cryptexes/OS/usr", 0))) {
++		native_cryptex_os_status = error;
++		return;
++	}
++	native_cryptex_os_stage = 4;
++	error = vnode_lookup("/System/Cryptexes/OS/System/Library/ExtensionKit/Extensions/WebContentExtension.appex/Info.plist", 0, &probe,
++	    vfs_context_current());
++	if (!error) {
++		vnode_put(probe);
++		native_cryptex_os_stage = 5;
++	}
++	native_cryptex_os_status = error;
++}
++/* The device answers MobileGestalt cached while the display gamut was P3: removed so they are worked out again from the device tree
++ * (now sRGB). 0 removed, ENOENT none there (already regenerated or never made). */
++volatile int native_gestalt_cache_status = -1;
++static void
++native_gestalt_cache_drop(proc_t p, user_addr_t scratch)
++{
++	static const char cache[] = "/private/var/containers/Shared/SystemGroup/systemgroup.com.apple.mobilegestaltcache/Library/Caches/"
++	    "com.apple.MobileGestalt.plist";
++	struct unlink_args request = {.path = scratch + 0xc00};
++	int32_t result = 0;
++	int error = copyout(cache, request.path, sizeof(cache));
++	if (!error) {
++		error = unlink(p, &request, &result);
++	}
++	native_gestalt_cache_status = error;
++}
++/* LaunchServices' database of this Data store was built while /System/Cryptexes/OS led nowhere, so it never registered what lies behind
++ * it (WebKit's extensions among them) and lsd does not register system content again on a later boot of the same OS build. Its files
++ * are removed once, so lsd builds the database again with the path in place; the marker file keeps later boots from repeating it.
++ * Status for the boot log: files removed, or -2 done before, or -errno. */
++#include <sys/dirent.h>
++volatile int native_ls_store_status = -1;
++static void
++native_ls_store_drop(proc_t p, user_addr_t scratch)
++{
++	static const char marker[] = "/private/var/ngpu/ls-store-rebuilt-1";
++	static const char caches[] = "/private/var/mobile/Containers/Data/InternalDaemon/5C583048-0C53-456F-B110-BB12068B787F/Library/Caches";
++	static const char prefix[] = "com.apple.LaunchServices-";
++	vfs_context_t ctx = vfs_context_current();
++	vnode_t vp = NULLVP;
++	if (!vnode_lookup(marker, 0, &vp, ctx)) {
++		vnode_put(vp);
++		native_ls_store_status = -2;
++		return;
++	}
++	int error = vnode_lookup(caches, 0, &vp, ctx);
++	if (error) {
++		native_ls_store_status = -error;
++		return;
++	}
++	char names[8][64];
++	unsigned found = 0;
++	char *buffer = kalloc_data(4096, Z_WAITOK);
++	uio_t uio = buffer ? uio_create(1, 0, UIO_SYSSPACE, UIO_READ) : NULL;
++	int eof = 0;
++	while (uio && !eof && found < 8) {
++		uio_reset(uio, uio_offset(uio), UIO_SYSSPACE, UIO_READ);
++		uio_addiov(uio, CAST_USER_ADDR_T(buffer), 4096);
++		int entries = 0;
++		if ((error = VNOP_READDIR(vp, uio, 0, &eof, &entries, ctx))) {
++			break;
++		}
++		const size_t used = 4096 - (size_t)uio_resid(uio);
++		if (!used) {
++			break;
++		}
++		for (size_t at = 0; at + sizeof(struct dirent) - sizeof(((struct dirent *)0)->d_name) <= used && found < 8;) {
++			const struct dirent *entry = (const struct dirent *)(buffer + at);
++			if (!entry->d_reclen) {
++				break;
++			}
++			if (entry->d_namlen < sizeof(names[0]) && !strncmp(entry->d_name, prefix, sizeof(prefix) - 1)) {
++				memcpy(names[found], entry->d_name, entry->d_namlen);
++				names[found++][entry->d_namlen] = 0;
++			}
++			at += entry->d_reclen;
++		}
++	}
++	if (uio) {
++		uio_free(uio);
++	}
++	if (buffer) {
++		kfree_data(buffer, 4096);
++	}
++	vnode_put(vp);
++	if (error) {
++		native_ls_store_status = -error;
++		return;
++	}
++	int removed = 0;
++	char path[192];
++	for (unsigned i = 0; i < found; ++i) {
++		snprintf(path, sizeof(path), "%s/%s", caches, names[i]);
++		struct unlink_args request = {.path = scratch + 0xc00};
++		int32_t result = 0;
++		if (!copyout(path, request.path, strlen(path) + 1) && !unlink(p, &request, &result)) {
++			removed++;
++		}
+ 	}
++	(void)native_gpu_addon_write(marker, (const uint8_t *)"1\n", 2, 0644, ctx);
++	native_ls_store_status = removed;
+ }
+ static void
+ native_gpu_addon_prepare(proc_t p, user_addr_t scratch)
+@@ -7512,6 +7667,9 @@
+ 	    "7570.iPadOS_17_Flat_Background-1024w-1366h@2x~ipad.ca/assets/J120.HEIC",
+ 	    "/Library/Wallpaper/Collections/iPadOS_17~ipad.wallpaperCollection/Wallpapers/7570.iPadOS_17_Flat-1024w-1366h@2x~ipad.wallpaper/"
+ 	    "7570.iPadOS_17_Flat_Background-1024w-1366h@2x~ipad.ca/J120.png", &native_gpu_addon3_stage, &native_gpu_addon3_status);
++	native_cryptex_os_view(p, scratch);
++	native_gestalt_cache_drop(p, scratch);
++	native_ls_store_drop(p, scratch);
+ }
+ 
+ /* The deletable system apps (Weather, Notes, Calendar, ...) ship in the OS volume's /private/var/staged_system_apps. A restore copies
