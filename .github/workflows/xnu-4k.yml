@@ -69,6 +69,23 @@ jobs:
       # kernel link) and the header staging that the raw script assumes has
       # already happened. Calling the script directly is what produced the
       # long chain of missing archive / missing header failures.
+      # mig shells out to `clang` from PATH to compile .defs files, and Homebrew
+      # LLVM does not accept Apple's -mach_msg2, which shows up as
+      #   clang: error: unknown argument: '-mach_msg2'
+      #   mig: fatal: no SubSystem declaration
+      # Keep Homebrew LLVM off PATH: the driver reaches it by absolute path for
+      # the archive builders only.
+      - name: Pin the Xcode toolchain on PATH
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | sort -V | head -1)
+          TOOL="$XC/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+          echo "$TOOL" >> "$GITHUB_PATH"
+          echo '=== clang resolution ==='
+          which -a clang | head -5
+          clang --version | head -2
+          echo '=== mig ==='
+          xcrun --sdk iphoneos --find mig
+          xcrun --sdk iphoneos --find clang
       - name: Assemble the build tree
         run: |
           set -o pipefail
