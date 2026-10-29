@@ -577,7 +577,10 @@ else
 fi
 if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ]; then
   CRYPTO_ARCHIVE=$ROOT/build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a
-  test -f "$CRYPTO_ARCHIVE"
+  # Pass 1 deliberately runs without the archive just to emit link.filelist
+  if [ "${XNU_ALLOW_MISSING_CRYPTO_ARCHIVE:-0}" != 1 ]; then
+    test -f "$CRYPTO_ARCHIVE"
+  fi
   EXTRA_CFLAGS="$EXTRA_CFLAGS -DXNU_SOURCE_CORECRYPTO14=1"
   KERNEL_EXTRA_ARCHIVES="-L$KERNEL_SDKROOT/usr/local/lib/kernel -lfirehose_kernel $CRYPTO_ARCHIVE"
   KERNEL_ARCHIVE_DEPENDENCIES=$CRYPTO_ARCHIVE

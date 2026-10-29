@@ -63,16 +63,19 @@ jobs:
       # exists after a kernel link pass, and the link needs the corecrypto
       # archive. Break the cycle the way upstream does: link once without
       # corecrypto, build the provider, then link for real (incremental).
-      - name: Pass 1 - link without corecrypto to produce link.filelist
+      - name: Pass 1 - compile and link once to produce link.filelist
+        # Full personality, but the corecrypto archive assertion is skipped and
+        # a failed link is tolerated: link.filelist is written before the link,
+        # and it is the only artefact this pass needs.
         env:
           MAKEFLAGS: ""
-          XNU_SOURCE_CORECRYPTO14: "0"
-          XNU_CRYPTO_BOOTSTRAP: "source"
+          XNU_ALLOW_MISSING_CRYPTO_ARCHIVE: "1"
         run: |
           set -o pipefail
-          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tail -200 || true
-          echo '--- link.filelist? ---'
+          bash -x scripts/build-xnu-4k-baseline.sh 2>&1 | tee /tmp/pass1.log | tail -120 || true
+          echo '--- link.filelist ---'
           ls -l build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || echo 'MISSING'
+          grep -c . build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/link.filelist 2>/dev/null || true
 
       # The namespaced provider is what the baseline asserts with a bare
       # test -f. Build it now that link.filelist exists.
