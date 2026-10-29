@@ -1,0 +1,27 @@
+{
+  "mesa_revision": "85fda3b36405bcaea8bffc64aa4f2651dc90770d",
+  "files": {
+    "src/gallium/drivers/freedreno/a6xx/fd6_program.cc": "88d91ce9fba30ca1d5cf7c478eb44ea4ef11735037985ec361140b3f0020c26a",
+    "src/freedreno/ir3/ir3_shader.h": "7d3f3bf3280ae96460a783ce82eaab73d879a172df3e1ea94afe48e67cf723c5",
+    "src/freedreno/registers/gen_header.py": "81763fc03ea0ebf254ab7427af2113dc0c7c0d80dceab61232b6e371463d1f90",
+    "src/freedreno/registers/adreno/adreno_common.xml": "f898e4eee3de5f92d25597f003e5550a24fe50552d25555d6916dcd1b922d6f6",
+    "src/freedreno/registers/adreno/adreno_pm4.xml": "f8137e5d31a3cfce27cba0a8bc269e460067dca9ccb95e620404b7fc752913fb",
+    "src/freedreno/registers/adreno/a6xx_enums.xml": "08d56c3ee45ebaa151a8adc7adf7c372ecf89ca72fabc09da1d64645c31f06d4",
+    "src/freedreno/registers/adreno/a7xx_enums.xml": "8649a48eb99b71d3d882ed32021c0afb3400eb6623dc0a10afc2389bef40c497",
+    "src/freedreno/registers/adreno/a8xx_enums.xml": "18d5d8f4871125be7a0fc6d99c33269779532180ced872f33e508be02fc6ceeb",
+    "src/freedreno/registers/adreno/a6xx.xml": "142f225bc4ae56a910c910f1d233cc7890587c74fbdec8c390466ffbdf5e0faa",
+    "src/freedreno/ir3/ir3.c": "09d6bde09461a0efa2be74ca41158692d568b661d4db753e65549cd6d392bd82",
+    "src/util/u_math.h": "f9f80af6f6c28aa684d5987d1edfb3cd2e958f64dbfd95e41230026cbef98d99",
+    "src/util/bitscan.h": "f7ac55be1a19f7a7bad10b64d16861a37b0e239d147a083612875c929a0bc2b5",
+    "src/compiler/shader_enums.h": "a206b036c26034242d09568ffd95f9e881d73bea22fb02d50ee1fab3aba64241",
+    "src/gallium/drivers/freedreno/a6xx/fd6_rasterizer.cc": "c150f03649b0eb76524f718778ee8eb671223f92074d431dcfff7cb2a435a8eb",
+    "src/gallium/drivers/freedreno/freedreno_state.h": "9c5e91c7e94712dd8cc8fd3c0eb55588bbea472a3b8a6d0edee4ce6271b58bc6",
+    "src/gallium/auxiliary/util/u_inlines.h": "2646f611e8f2666ab177f8f03d3d9e6f208891e1c72efae76aedb8df81302277",
+    "src/gallium/include/pipe/p_state.h": "20c5116f05ee7199012def6607578a7d845be5764d2aecf693d72f3fbfd51851",
+    "src/freedreno/common/fd6_pack.h": "1f4e10265665217fbee858a5bea0084fe932489f3001e1991bcec8975f3b0a5e",
+    "src/util/half_float.h": "fd9f262c6674b4688d83d2151433980437cbba494035152c505733b8c1b455f3"
+  },
+  "scope": "Actual A740 rasterizer state; original primary function with only register transport replaced",
+  "gpu_execution_qualified": false,
+  "complete_pipeline_state": false
+}

@@ -1,0 +1,11 @@
+{
+  "mesa_repository": "https://gitlab.freedesktop.org/mesa/mesa",
+  "mesa_revision": "85fda3b36405bcaea8bffc64aa4f2651dc90770d",
+  "files": {
+    "src/gallium/drivers/freedreno/a6xx/fd6_const.cc": "b23c58f21069d8ed7777bca74f94c1e1e1b4a046ccd8c2d2517fceae82b8808d",
+    "src/gallium/drivers/freedreno/a6xx/fd6_emit.h": "9ef105a064b718a466885a2aa4d00e7587739b02553d1ad835d2bd691481da7a",
+    "src/gallium/drivers/freedreno/ir3/ir3_const.h": "7a9bd60ce74e719d29e932d048dd619dd931a28f68edfd981d131963a2b7e413",
+    "src/freedreno/registers/adreno/adreno_pm4.xml": "f8137e5d31a3cfce27cba0a8bc269e460067dca9ccb95e620404b7fc752913fb",
+    "src/freedreno/common/freedreno_pm4.h": "70b5e5f6f1ee45c3bed27d08ad1a798cb2f8662a76b32e47c0907e08aea26258"
+  }
+}

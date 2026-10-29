@@ -1,0 +1,51 @@
+{
+  "nvidia": {
+    "repository": "https://github.com/nullmoth/nvidia-macos-driver",
+    "commit": "637282334617d27bccf8aa2448497c0f19465dc8",
+    "clone": "depth 1, blob filter, checked out source",
+    "files": {
+      "README.md": "4807e510582c3682911c7ca87970fbf27e78403bc8db7624aeeba4d40fd8c43f",
+      "docs/HOW-IT-WORKS.md": "f44127a1bb3cfa8de3e5a16e635d74c1a1c4833bf1161e434b2cd4fc58055a84",
+      "nvk/nvk-macos.patch": "682ce895af8dc1aa258ed219612ef72206d69fd0eb3a8c81da4a615be53c44d3"
+    }
+  },
+  "translator": {
+    "repository": "https://github.com/steelbrain/metal2vulkan",
+    "commit": "720ef1ce9ae2a2068999a8675717418b9416283e",
+    "clone": "depth 1, blob filter, checked out source",
+    "files": {
+      "README.md": "e603d5c9f6b736e1f468e06e062299eff2cbb3b799718a24518dad4733ad4318",
+      "Cargo.toml": "2cfb7ff0fe5bb20e0a1e2b342df42580221911bc2e9a6a171c9cb2ef1ee14f2d",
+      "crates/metal2vulkan/src/device/policy.rs": "7b98a679de388befde39a1b9af0f35dddea799d791dba83200705ce52ddab98a",
+      "crates/metal2vulkan-validation/profiles/vk12-bare.json": "b39bb9d68811859ed6f781c46d4c8210a72a53ffda34e2da656de6936520a6be"
+    }
+  },
+  "mesa": {
+    "repository": "https://gitlab.freedesktop.org/mesa/mesa",
+    "commit": "c823a83e8f373a5c36c2b9ed1d7dc98a4f3360ee",
+    "clone": "depth 1, blob filter, checked out source",
+    "files": {
+      "src/freedreno/vulkan/tu_knl.h": "0e335c276b47e9e4a986aa7498639b7ccd8cf0336e6b3ef8f9255714f69b27fa",
+      "src/freedreno/vulkan/tu_knl.cc": "afeae5ae0754a57ce03e7b04dbdbe9f821b8b336fd110f6053867d7a21cc0413",
+      "src/freedreno/vulkan/tu_knl_drm_msm.cc": "885497a1273631232e214ff7932b39175521a7cabec46c743802eb4082655070",
+      "src/freedreno/vulkan/meson.build": "ced86594f7710606aa568e75cc948ec3b7f40623c90be058cb1dfc53becb35f4"
+    }
+  },
+  "turnip_packaging": {
+    "repository": "https://github.com/The412Banner/Banners-Turnip",
+    "commit": "cb840f547d4866d9a1a2cb04258da0e16a19e84d",
+    "clone": "depth 1, blob filter, checked out source",
+    "files": {
+      "README.md": "1a2a1d9e4810645ba7f1f62670d1d6ccd36067a12f3fc22e221fc114c8561eb3",
+      "patches/8g2_oneui.py": "e76968f95a27a303f9d6eb000d579345845d36e2ad7c1483100da6bd7a78371e"
+    }
+  },
+  "board_linux": {
+    "repository": "https://github.com/ianchb/sm8550-mainline",
+    "commit": "42f3b40c702abbc37c3a04c95af008cd283aeaf3",
+    "source_manifest": "docs/adreno-inputs.json",
+    "scope": "Existing hash-pinned GPU/IOMMU inputs; no full Linux build"
+  },
+  "target_air_inventory_sha256": "fdf5948f740aefbb78b8dae299315027c4164efadcf54f91bed283ec596b0e97",
+  "hardware_observations_added": false
+}

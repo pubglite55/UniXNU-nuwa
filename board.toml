@@ -57,6 +57,10 @@ archives = [
   "build-arm-driver.py ArmDTPlatform",
   "build-arm-driver.py ArmCpu",
   "build-arm-driver.py NativeAES",
+  # NativeAES subclasses the original IOAESAccelerator, whose methods only exist
+  # in Apple's kernelcache; this binds them from the recorded addresses and
+  # produces the archive the kernel links (read by --objects-dir below).
+  "build-software-aes-bindings.py --objects-dir build/native-aes",
   "prepare-storage-headers.py",
   # NativeUfs (UniXNU/ShengUfs) needs native_ufs_read_ticks and timerTicks from
   # UniXNU-sheng package/BootProgress.c, which only builds with

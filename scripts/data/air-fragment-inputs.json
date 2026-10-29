@@ -1,0 +1,72 @@
+{
+  "mesa_revision": "85fda3b36405bcaea8bffc64aa4f2651dc90770d",
+  "mesa_source_sha256": {
+    "src/freedreno/ir3/ir3_nir.c": "283b88466cfa300be6873e9dba14490715162432b1dabf15850f811dc15ef25c",
+    "src/freedreno/ir3/ir3_shader.c": "1a8c2b5f4f6663c0c2a4c4e56ecf189713025ee66307193a8adf5b67026784c5",
+    "src/compiler/shader_enums.h": "a206b036c26034242d09568ffd95f9e881d73bea22fb02d50ee1fab3aba64241",
+    "src/compiler/nir/nir_intrinsics.py": "72b70fc782a769c8c568659a28ea9c26a42919ffd4ea04ccba5a1d1442117a27"
+  },
+  "originals": [
+    {
+      "library": "QuartzCore",
+      "index": 65,
+      "original_bitcode_sha256": "5cf1a3f7a8796cb25a4ca5c6991d64d52b2987b5aeef8e3d801468a42dfd5811",
+      "binary_sha256": "e0ddd6f1e9fedd918be940c429b902a54fbbbe310bd95a5311d822aff651b763",
+      "interface_sha256": "dbd63c1fe1d77090adf38b7b33c17c1f773e0165596d7f55e21e5e675afa26d6",
+      "abi_sha256": "e315ab79aedc1fdd585835c20db851755b754dab77067869d27122434fe6b6f3",
+      "input_words": 13
+    },
+    {
+      "library": "QuartzCore",
+      "index": 67,
+      "original_bitcode_sha256": "aed0962b1d1d93bd41dcab965c7b75b277aa963818a0c494996c2bf9bbbeee80",
+      "binary_sha256": "20dcdc3f3d9c7241fd1265e9f3bf8f9e00dc22cc086ebc4bf5e086ac65211f79",
+      "interface_sha256": "5fe6a01304498a65eb0438c55718407b0a41661847c581f65509458bdedd2736",
+      "abi_sha256": "118fe9d58c62c764488e17c94d9cebdf7144b1eb54e0d61eabf08a8fd15fc96d",
+      "input_words": 17
+    },
+    {
+      "library": "QuartzCore",
+      "index": 75,
+      "original_bitcode_sha256": "95a54802d74b64a50d7b276d0721e12e5af3eb9a6f78e32fce37b8638bdb0521",
+      "binary_sha256": "efaa7d6674e9ef0715202474109319931927a79f21ec267974780eab74aadccf",
+      "interface_sha256": "2b8dbafa781ec8fefaec079f5e41efcbe442c529283ec3e855e973f373fba5b6",
+      "abi_sha256": "687f58212ba55d07051fad1f12fc9e1184d7ae5e577b57e1b4c5b6455f47a73d",
+      "input_words": 17
+    },
+    {
+      "library": "QuartzCore",
+      "index": 153,
+      "original_bitcode_sha256": "e1a736b97d8f80087c8b1307b7393cfd3aca289037135319072ef03fdbd34a84",
+      "binary_sha256": "e0ddd6f1e9fedd918be940c429b902a54fbbbe310bd95a5311d822aff651b763",
+      "interface_sha256": "52a2293f0a9e27eeb2af3e87c9570f95861fbf1584f1ae3100ae91c2e80e2cef",
+      "abi_sha256": "e315ab79aedc1fdd585835c20db851755b754dab77067869d27122434fe6b6f3",
+      "input_words": 13
+    },
+    {
+      "library": "QuartzCore",
+      "index": 155,
+      "original_bitcode_sha256": "8c695317c83ede3175541ed3b7213c5991c04f86c252ab6cfb95ffdb488ba1c2",
+      "binary_sha256": "20dcdc3f3d9c7241fd1265e9f3bf8f9e00dc22cc086ebc4bf5e086ac65211f79",
+      "interface_sha256": "b4c8e2247c42be9e0b67484291cb409dae913eeab247157d8b0975d0dfb577ed",
+      "abi_sha256": "118fe9d58c62c764488e17c94d9cebdf7144b1eb54e0d61eabf08a8fd15fc96d",
+      "input_words": 17
+    }
+  ],
+  "source_interpolation": "explicit air.center plus air.perspective",
+  "numerical_test_inputs": "finite float32 values after interpolation; no rasterizer",
+  "cases_per_original": 4096,
+  "scalar_saturate_contract": [
+    "nnan",
+    "ninf",
+    "nsz"
+  ],
+  "hardware_interpolation_qualified": false,
+  "math_and_interpolation_reference": {
+    "url": "https://developer.apple.com/metal/Metal-Shading-Language-Specification.pdf",
+    "version": "4.1",
+    "publication_date": "2026-06-04",
+    "sha256": "41538b30d2f1140a5b2a0c84ce0a9f7b67bf0c707e224cfea0bfe5a44aa26cf5",
+    "scope": "longstanding common saturate and center/perspective definitions only; target AIR and OS remain the original supplied iOS17"
+  }
+}

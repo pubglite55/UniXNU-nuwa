@@ -1,0 +1,177 @@
+{
+  "chip_id": "0xffff43050a01",
+  "cases": [
+    {
+      "name": "QuartzCore-111",
+      "library": "QuartzCore",
+      "index": 111,
+      "stage": "vertex",
+      "input_sha256": "5f5a87297d17542eb4c27d225ddaf7d30ef7eedd183172293ed3a59b912d9244",
+      "binary_sha256": "183870069979673265622eb249a9a540422c650464b247f0ec248ce2555480ad",
+      "abi_sha256": "11b194406dde4b4ed93787a3669ff4a5ba4177302b4a5c0dc85b8dabe1268e8d",
+      "interface_sha256": "e26fee3aff4d2d7476f32123f54f3318538b314f8b206a81e83d77c1274a821c"
+    },
+    {
+      "name": "RenderBox-0",
+      "library": "RenderBox",
+      "index": 0,
+      "stage": "vertex",
+      "input_sha256": "84ecea0e6648f967460b54c43c5f8886c2f4899a88bb2db1a82e61100792abd3",
+      "binary_sha256": "3c13902ba08c932b88ff9d5ad44c828ca1866a2aaf3817188d8f4c019b266826",
+      "abi_sha256": "9a4ebcb37d5efb8a6e953fc42739feeb6e8c42be56fab7170cb0889389fcfb7d",
+      "interface_sha256": "cf2917bb4603d3098e672c1ef4b7e165f7997d3ed06ed8de4eb295af3914c63e"
+    },
+    {
+      "name": "RenderBox-2",
+      "library": "RenderBox",
+      "index": 2,
+      "stage": "vertex",
+      "input_sha256": "1675aa4eb7e943641a117b019556ca0a2012c69188e5495686cabd3c5e28eaeb",
+      "binary_sha256": "3c13902ba08c932b88ff9d5ad44c828ca1866a2aaf3817188d8f4c019b266826",
+      "abi_sha256": "9a4ebcb37d5efb8a6e953fc42739feeb6e8c42be56fab7170cb0889389fcfb7d",
+      "interface_sha256": "397bce183f7b7676caebbee05e6ec522cce3479327ece364a7e2a869dd5b112f"
+    },
+    {
+      "name": "RenderBox-26",
+      "library": "RenderBox",
+      "index": 26,
+      "stage": "vertex",
+      "input_sha256": "46446bcfad697179822b6ac411e0ba5136e8447ebed4d945d2d5b8fad2b7ef96",
+      "binary_sha256": "2334ba1fc2daad54e1878728ca4a93cbb3f1155cce6b56252fac63d4cb42c5f4",
+      "abi_sha256": "c38aa36afbc5c7d75686048b10f6d7e980843e1a3d214ffa3cadf410097d76ea",
+      "interface_sha256": "1b4ad608eebbec42eca219e5405fdcb28d6962ec8f2b8f7b5eb4d87358c9c7a7"
+    },
+    {
+      "name": "RenderBox-28",
+      "library": "RenderBox",
+      "index": 28,
+      "stage": "vertex",
+      "input_sha256": "4838f7628497825bb0bcae760eff7cad08f8da860771e926176e452fe7f090ff",
+      "binary_sha256": "3c13902ba08c932b88ff9d5ad44c828ca1866a2aaf3817188d8f4c019b266826",
+      "abi_sha256": "9a4ebcb37d5efb8a6e953fc42739feeb6e8c42be56fab7170cb0889389fcfb7d",
+      "interface_sha256": "b60b62b8d3ec7ef09c35160c0506fd8cecaed609e05fc8d67d7d1ffcdf730db7"
+    },
+    {
+      "name": "RenderBox-45",
+      "library": "RenderBox",
+      "index": 45,
+      "stage": "vertex",
+      "input_sha256": "7c4c93deec7297dc3953108ed0624fd08e00acba7382f811050594ffe9b3d5b9",
+      "binary_sha256": "3c13902ba08c932b88ff9d5ad44c828ca1866a2aaf3817188d8f4c019b266826",
+      "abi_sha256": "9a4ebcb37d5efb8a6e953fc42739feeb6e8c42be56fab7170cb0889389fcfb7d",
+      "interface_sha256": "a75dab8e0d8f577acfde07b2afd7220c58b10286b539646aba9a15643cb82066"
+    },
+    {
+      "name": "RenderBox-65",
+      "library": "RenderBox",
+      "index": 65,
+      "stage": "vertex",
+      "input_sha256": "29b1701ade0623ece1ec344d897b113a9bb1fa0299e65875565a0d76791185a0",
+      "binary_sha256": "3c13902ba08c932b88ff9d5ad44c828ca1866a2aaf3817188d8f4c019b266826",
+      "abi_sha256": "9a4ebcb37d5efb8a6e953fc42739feeb6e8c42be56fab7170cb0889389fcfb7d",
+      "interface_sha256": "40665d00ac795d6fe1b5a28db480d4053905c68ddf8fd3c7ed95cdfc8c26b463"
+    },
+    {
+      "name": "RenderBox-71",
+      "library": "RenderBox",
+      "index": 71,
+      "stage": "vertex",
+      "input_sha256": "ca0e5e386bf1aa26e9160c394a50271110125d6e8607baa3004a8e79e1ebbaa7",
+      "binary_sha256": "3c13902ba08c932b88ff9d5ad44c828ca1866a2aaf3817188d8f4c019b266826",
+      "abi_sha256": "9a4ebcb37d5efb8a6e953fc42739feeb6e8c42be56fab7170cb0889389fcfb7d",
+      "interface_sha256": "da89445f23e7f2009eca21e2e91724eeaf5421a84165d04943f28900f4294d0b"
+    },
+    {
+      "name": "QuartzCore-7",
+      "library": "QuartzCore",
+      "index": 7,
+      "stage": "vertex",
+      "input_sha256": "ab079ddf981fea19c175b46445295285c4f60c9e57770046be0a031e73ddcdae",
+      "binary_sha256": "f4c505d9cbb9100b9bc32c66be1cefb0079bf9ebd472a9efd5385d9dbbbe16f3",
+      "abi_sha256": "06f23e408171a1756d8b227e95d796bef09a7e3223c1d81cdf76f931d37b0dd4",
+      "interface_sha256": "fcb8fe3534a32c3398c7ebbc7bcfe5b1d364585ce3372cabe0c68ca3a8408b25"
+    },
+    {
+      "name": "QuartzCore-8",
+      "library": "QuartzCore",
+      "index": 8,
+      "stage": "vertex",
+      "input_sha256": "3c6e8fd4ea57da93ed26b19a18973cec27539997aad88c7e61baa5e681b8b3b4",
+      "binary_sha256": "c232857dcc9bcb1ae56fd2d9b82355209edc277dcba229c1a9a5085d8cffec7e",
+      "abi_sha256": "1b1de634c13fa380a6c2f6c23a32dedc072d303be2a67b2b4e84812cc41f3341",
+      "interface_sha256": "89b289eb5eed55cc98f316deffa98fb3117f226a0c7b290e1634750e12941b6a"
+    },
+    {
+      "name": "QuartzCore-9",
+      "library": "QuartzCore",
+      "index": 9,
+      "stage": "vertex",
+      "input_sha256": "e1a875a0c2f4bca2a26efddbff14dc832a678980ce5c7affe5f58a91aef7c312",
+      "binary_sha256": "2854874327e15d9861539f7e6f027cc22c458398ab87c9d7e353aeefdb90b68b",
+      "abi_sha256": "adeda65171c00da627a7ddf1e772ab253e54a881c050fb40690ba8e1c39cfa98",
+      "interface_sha256": "c9d1c766787a4f54704461064342c792e67af758d2031b1278caac5be2bdd1d7"
+    },
+    {
+      "name": "QuartzCore-10",
+      "library": "QuartzCore",
+      "index": 10,
+      "stage": "vertex",
+      "input_sha256": "e722444b0cced9581073176c1f0a9bb6adae2549a034b01fcbcc0263303eaef2",
+      "binary_sha256": "a56945ef3b880856d02f9594bd6b0c968e6923e757fdc9f1731f8db730c67343",
+      "abi_sha256": "e56d7c24a60c5e8c1b3d4d2038134b1ae2f1ee350d433a7b22bea443f2523711",
+      "interface_sha256": "a465fada97ccf49cfbbcf9b6e1db05fb2e32e55934b92c46c7f1e9fb358b415a"
+    },
+    {
+      "name": "QuartzCore-11",
+      "library": "QuartzCore",
+      "index": 11,
+      "stage": "vertex",
+      "input_sha256": "cfcbd84555bc43f9dc710c854fe709667c0296164847fa27258aa313ecd56d05",
+      "binary_sha256": "18cd63366113e8899faf773d237b6fb6b6412c61e2cfd032f8f0a98354ef1c33",
+      "abi_sha256": "eb508b1696ad8aecca364cd19763e8467013b48acfefcffccfa59ede845cd540",
+      "interface_sha256": "bf5c04de5218311ec22cc32ff0e7ad9b6cfb607db052ce996fe9fb9a671c3237"
+    },
+    {
+      "name": "QuartzCore-98",
+      "library": "QuartzCore",
+      "index": 98,
+      "stage": "vertex",
+      "input_sha256": "5fb3de75e6afaf040b5ecff58cb35c7ed9420757318f11d3841977c7b087cc0b",
+      "binary_sha256": "18cd63366113e8899faf773d237b6fb6b6412c61e2cfd032f8f0a98354ef1c33",
+      "abi_sha256": "eb508b1696ad8aecca364cd19763e8467013b48acfefcffccfa59ede845cd540",
+      "interface_sha256": "56dcb30843f06aecb068da27a3a3d399f3c5233a35193993b678d8e760d9a640"
+    },
+    {
+      "name": "QuartzCore-69",
+      "library": "QuartzCore",
+      "index": 69,
+      "stage": "fragment",
+      "input_sha256": "ddb5baa2857972a79bf016cb2961884047477f7abbd9fac9d7bd6a32df219eea",
+      "binary_sha256": "707919af1ec7e35aa4424d1d3097ab404a971a7352b9ae8aeeac5fb834ba60f6",
+      "abi_sha256": "958302a99042694a332f7504938a2fc126048aefc601ec897dd21a50e86e948a",
+      "interface_sha256": "fc0b8f155e005431cdde09fbda23fc941039fc12b0e9ca1ad143882ebbfaa1a5"
+    },
+    {
+      "name": "QuartzCore-73",
+      "library": "QuartzCore",
+      "index": 73,
+      "stage": "fragment",
+      "input_sha256": "18baa7d6c006cd4074e3ec9324bba16718b8ac34ca2630ff53ea459f9a896ca0",
+      "binary_sha256": "a4ce3b73b657092e2cc62bacfe255009ea5e153a658f267564382c2242772269",
+      "abi_sha256": "233d8005cd5d4524e5f91685630a257ad4b14a670ee54e53e3d09f57bfc17be3",
+      "interface_sha256": "c953aac375cbddec14ba546bb45a1629406e9131a03aae02aa0b94d1944ac5fd"
+    },
+    {
+      "name": "QuartzCore-157",
+      "library": "QuartzCore",
+      "index": 157,
+      "stage": "fragment",
+      "input_sha256": "c8533e16d0d295a37980dcb2abdb5a148014180bf9a60fc578e4aa84eb3d3eb8",
+      "binary_sha256": "707919af1ec7e35aa4424d1d3097ab404a971a7352b9ae8aeeac5fb834ba60f6",
+      "abi_sha256": "958302a99042694a332f7504938a2fc126048aefc601ec897dd21a50e86e948a",
+      "interface_sha256": "00119cf9731282646115a73d4416843e352fcc25976198af36581ebd4d7cf32d"
+    }
+  ],
+  "original_inputs_modified": false,
+  "gpu_execution": false
+}

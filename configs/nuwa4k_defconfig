@@ -27,6 +27,8 @@ CONFIG_XNU_ARMCPU=y
 # storage driver is the next bring-up step, not this one.
 CONFIG_XNU_NATIVE_UFS=n
 CONFIG_XNU_NATIVE_AES=y
+# build-software-aes-bindings.py writes libSoftwareAES.a next to the objects.
+CONFIG_XNU_NATIVE_AES_ARCHIVE="{tree}/build/native-aes/libSoftwareAES.a"
 CONFIG_XNU_DT_PANIC_REGION=y
 CONFIG_XNU_NATIVE_ARCH_TIMER=y
 CONFIG_XNU_NATIVE_PAN=y

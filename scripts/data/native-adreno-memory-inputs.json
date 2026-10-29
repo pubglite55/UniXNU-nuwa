@@ -1,0 +1,38 @@
+{
+  "native_adreno_revision": "c890d2b8a6ae14bf3df2fe253bbf5288102853f8",
+  "arm_smmu_4k_revision": "8c687592c2c63d9f0010df575b5ba4d2b1f1a239",
+  "read_references": {
+    "nvidia-macos-driver": {
+      "revision": "637282334617d27bccf8aa2448497c0f19465dc8",
+      "files": {
+        "kexts/NVRM/os-xnu2.cpp": "b02c75a364a1a88302c786339f02ad6cc017b7599fd10fcd790394a65f5ee7a9",
+        "kexts/NVRM/nvrm_gpuva.cpp": "57957e2476f4ba5c473cdc07a8ff9926306956dc32b1d57a9bf069a543ef65e3"
+      }
+    },
+    "mesa": {
+      "revision": "c823a83e8f373a5c36c2b9ed1d7dc98a4f3360ee",
+      "files": {
+        "src/freedreno/vulkan/tu_knl_drm_msm.cc": "885497a1273631232e214ff7932b39175521a7cabec46c743802eb4082655070",
+        "src/freedreno/vulkan/tu_knl.cc": "afeae5ae0754a57ce03e7b04dbdbe9f821b8b336fd110f6053867d7a21cc0413",
+        "src/freedreno/vulkan/tu_knl.h": "0e335c276b47e9e4a986aa7498639b7ccd8cf0336e6b3ef8f9255714f69b27fa"
+      }
+    }
+  },
+  "source_kernel": {
+    "revision": "d8b80295118ef25ac3a784134bcf95cd8e88109f",
+    "local_patch_sha256": "6b43001090cb4594441981eaa68e84f1eb921712f1e980981ed207340c65fdbf",
+    "files": {
+      "iokit/IOKit/IOMemoryDescriptor.h": "c34a62377daee000908998bb9013e466d59b8236d6c1e6cadec719655a3e9750",
+      "iokit/IOKit/IOBufferMemoryDescriptor.h": "92e19dc6505041fe0ff4b067224473b03f5731f9152915b7399d41524f61e29b",
+      "iokit/Kernel/IOMemoryDescriptor.cpp": "fe7aa341299a3aa3f9e58130ba450f39edc1e35841ac6d1dccf679a9627eadfc",
+      "iokit/Kernel/IOBufferMemoryDescriptor.cpp": "606d18527db26310912b88d8c1ce29cfa853d9b7e6914c837a8c5ecdcd5869a4",
+      "osfmk/arm64/caches_asm.s": "994b699b394f6e42969271d73585feb02a66e4829b5922d5983eaf7b442d2e25",
+      "osfmk/arm/caches.c": "1f60ebd42161f2e4d064100f008e84a7f2133272601602cd5c67fe1be2c2a41f"
+    },
+    "checkpoint_sha256": "2fdfaa378569c34f114c8f06cb4696ad97b35d07407de476e3496a0c20fa4aa9"
+  },
+  "offline_report_sha256": "3e2c15b4ad82e9b539b36c31b77e27ff29648900a96a698e0244d5369624457d",
+  "native_compiler_dependency_count": 336,
+  "native_kernel_executed": false,
+  "hardware_qualified": false
+}
