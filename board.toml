@@ -70,7 +70,9 @@ archives = [
   "build-libpthread-kernel.py",
   # 4K chain: the stub supplies the legacy display hooks so the kernel links
   # before the prelink candidate exists (same role as fuxi_defconfig).
-  "build-legacy-stub.py",
+  # The weak legacy-display hooks live in bsd_init.c via the kernel script, so
+  # the sheng-local kits/sheng/LegacyDisplayStub.c is not needed.
+  # "build-legacy-stub.py",
 ]
 
 [kernel.prelink]

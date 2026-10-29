@@ -67,6 +67,11 @@ __attribute__((weak)) void native_legacy_display_probe(void)
 {
 	kprintf("nuwa: native_legacy_display_probe: no display provider on this board yet\n");
 }
+
+__attribute__((weak)) void native_legacy_display_late_probe(void)
+{
+	kprintf("nuwa: native_legacy_display_late_probe: no late display provider yet\n");
+}
 NUWA_DISPLAY_STUB
 fi
 export XNU_AVAILABILITY_PL=$ROOT/.cache/fakeroot/usr/local/libexec/availability.pl

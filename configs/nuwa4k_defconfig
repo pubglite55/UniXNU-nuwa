@@ -57,6 +57,10 @@ CONFIG_XNU_BOOT_PROGRESS=n
 CONFIG_XNU_NATIVE_ADRENO=n
 
 CONFIG_XNU_CRYPTO_BOOTSTRAP="prelinked"
-CONFIG_XNU_EXTRA_LD_ARCHIVES="{tree}/build/legacy-stub/libLegacyStub.a"
+# build-legacy-stub.py compiles kits/sheng/LegacyDisplayStub.c, a sheng-local
+# file that is not published, and the weak hooks it supplied are now in
+# bsd_init.c itself (see scripts/build-xnu-4k-baseline.sh), so no extra archive
+# is needed.
+# CONFIG_XNU_EXTRA_LD_ARCHIVES="{tree}/build/legacy-stub/libLegacyStub.a"
 CONFIG_XNU_NATIVE_MOBILE_DISPLAY=n
 CONFIG_XNU_ARMVIRT_PLATFORM=n
