@@ -72,6 +72,7 @@ jobs:
       - name: Assemble the build tree
         run: |
           set -o pipefail
+          chmod +x unixnu scripts/build-xnu-4k-baseline.sh scripts/linux/* 2>/dev/null || true
           ./unixnu defconfig nuwa4k
           ./unixnu tree 2>&1 | tail -40
 
