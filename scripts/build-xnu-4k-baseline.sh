@@ -578,13 +578,13 @@ if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ]; then
   fi
   if [ "$ADRENO_PM4_PROBE" = 1 ]; then
     PM4_PROBE_ARCHIVE=$ROOT/build/adreno-pm4-probe/libAdrenoPM4Probe.a
-    test -f "$PM4_PROBE_ARCHIVE"
+    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$PM4_PROBE_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$PM4_PROBE_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $PM4_PROBE_ARCHIVE"
   fi
   if [ "$SMMU4K_PROBE" = 1 ]; then
     SMMU4K_PROBE_ARCHIVE=$ROOT/build/smmu4k-probe/libArmSmmu4KProbe.a
-    test -f "$SMMU4K_PROBE_ARCHIVE"
+    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$SMMU4K_PROBE_ARCHIVE"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$SMMU4K_PROBE_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $SMMU4K_PROBE_ARCHIVE"
   fi
@@ -714,7 +714,7 @@ if any(first.get(name) != value for name, value in second.items()):
     raise SystemExit('RAM transport imports must match the already linked original storage bindings')
 PY_BINDINGS
       RAM_BLOCK_OBJECT=$ROOT/build/native-ram-block/NativeRamBlock.o
-      test -f "$RAM_BLOCK_OBJECT"
+      [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$RAM_BLOCK_OBJECT"
       KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES $RAM_BLOCK_OBJECT"
     else
       KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$RAM_BLOCK_ARCHIVE"
@@ -725,7 +725,7 @@ PY_BINDINGS
     PTHREAD_ARCHIVE=$ROOT/build/libpthread-kernel/libpthread_kernel.a
     PTHREAD_BOOTSTRAP=$ROOT/build/libpthread-kernel/source_pthread_bootstrap.o
     [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$PTHREAD_ARCHIVE"
-    test -f "$PTHREAD_BOOTSTRAP"
+    [ "${XNU_ALLOW_MISSING_ARCHIVES:-0}" = 1 ] || test -f "$PTHREAD_BOOTSTRAP"
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$PTHREAD_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $PTHREAD_ARCHIVE"
   fi
