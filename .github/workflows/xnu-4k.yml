@@ -87,6 +87,18 @@ jobs:
           export UNIXNU_DEVICE="$PWD"
           ./unixnu build -D "$PWD" kernel 2>&1 | tee /tmp/kernel.log | tail -120
 
+      - name: Diagnose firehose headers
+        if: always()
+        run: |
+          TREE=out/nuwa/tree
+          echo '=== refer/libdispatch/os ==='
+          ls -l "$TREE/refer/libdispatch/os/" 2>/dev/null | head -20 || echo 'missing dir'
+          echo '=== firehose_buffer_private.h anywhere under refer ==='
+          find "$TREE/refer" -name 'firehose_buffer_private.h' 2>/dev/null | head -5 || true
+          echo '=== fakeroot include os ==='
+          ls -l "$TREE/.cache/fakeroot/usr/local/include/os/" 2>/dev/null | head -15 || echo 'missing dir'
+          echo '=== fakeroot include kernel/os ==='
+          ls -l "$TREE/.cache/fakeroot/usr/local/include/kernel/os/" 2>/dev/null | head -15 || echo 'missing dir'
       - name: Collect
         if: always()
         run: |
